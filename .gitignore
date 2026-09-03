@@ -1,0 +1,12 @@
+# Commerce Control package-local ignore policy.
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Local runtime output
+*.log

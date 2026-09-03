@@ -1,0 +1,71 @@
+{
+  "name": "hermes-commerce-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first CLI and MCP control plane for discovery, ranking, evidence capture, and preparation-only agent-commerce workflows.",
+  "keywords": [
+    "mcp",
+    "agent-commerce",
+    "hermes",
+    "x402",
+    "commerce",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EchoEe247/hermes-commerce-control.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "files": [
+    "dist",
+    "scripts/install-hermes-commerce-control.sh"
+  ],
+  "bin": {
+    "commerce": "dist/launch/cli.js",
+    "commerce-mcp": "dist/launch/mcp.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "test:serial": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
+    "test:contracts": "node --import tsx --test test/config.test.ts test/policy.test.ts test/mcp.test.ts test/security-adversarial.test.ts",
+    "test:package": "node scripts/verify-package.mjs",
+    "opportunities:watch": "node --import tsx src/opportunities/cli.ts",
+    "opportunities:watch:built": "node dist/opportunities/cli.js",
+    "opportunities:review": "node --import tsx src/opportunities/review-cli.ts",
+    "opportunities:review:built": "node dist/opportunities/review-cli.js",
+    "opportunities:prepare-evaluation": "node --import tsx src/opportunities/evaluation-queue-cli.ts",
+    "opportunities:prepare-evaluation:built": "node dist/opportunities/evaluation-queue-cli.js",
+    "opportunities:evaluate-local": "node --import tsx src/opportunities/evaluate-local-cli.ts",
+    "opportunities:evaluate-local:built": "node dist/opportunities/evaluate-local-cli.js",
+    "opportunities:rank": "node --import tsx src/opportunities/ranking-cli.ts",
+    "opportunities:rank:built": "node dist/opportunities/ranking-cli.js",
+    "opportunities:route-execution": "node --import tsx src/opportunities/execution-routing-cli.ts",
+    "opportunities:route-execution:built": "node dist/opportunities/execution-routing-cli.js",
+    "opportunities:prepare-operator": "node --import tsx src/opportunities/operator-packet-cli.ts",
+    "opportunities:prepare-operator:built": "node dist/opportunities/operator-packet-cli.js",
+    "opportunities:prepare-pursuit": "node --import tsx src/opportunities/pursuit-dossier-cli.ts",
+    "opportunities:prepare-pursuit:built": "node dist/opportunities/pursuit-dossier-cli.js",
+    "opportunities:verification-plan": "node --import tsx src/opportunities/verification-plan-cli.ts",
+    "opportunities:verification-plan:built": "node dist/opportunities/verification-plan-cli.js",
+    "opportunities:record-verification": "node --import tsx src/opportunities/record-verification-cli.ts",
+    "opportunities:record-verification:built": "node dist/opportunities/record-verification-cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@piprail/sdk": "2.15.0",
+    "undici": "8.10.0",
+    "viem": "2.55.19",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}
