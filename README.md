@@ -2,7 +2,7 @@
 
 Hermes Commerce Control (HCC) is a local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
 
-The project is a standalone Apache-2.0-licensed repository. The source is public independently of package publication: package/registry release decisions are handled separately from the contributor workflow.
+The project is a standalone Apache-2.0-licensed repository. Its npm metadata is public-package-ready, while registry publication remains a separate release action gated on clean-install and package-name checks.
 
 ## What HCC does
 
@@ -32,6 +32,8 @@ The doctor command independently reports the effective security posture. Wallet 
 - Node.js `>=24.15.0 <25`
 - npm
 
+For the npm package contract, install paths, SemVer policy, and release gate, see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+
 ## Start here
 
 **Trying HCC:** follow the [zero-secret quickstart](docs/QUICKSTART.md).
@@ -51,6 +53,8 @@ npm run build
 npm test
 npm run test:contracts
 npm run test:package
+npm run test:registry
+npm run test:install
 ```
 
 For constrained hosts such as Android/Termux:
@@ -59,7 +63,7 @@ For constrained hosts such as Android/Termux:
 npm run test:serial
 ```
 
-`test:package` runs `npm pack --dry-run` and rejects development-only content such as `src/`, `test/`, `.github/`, `tsconfig.json`, and the package-boundary verifier itself.
+`test:package` verifies the compiled-only npm boundary and public executable contract. `test:registry` rejects a package-name collision with an unrelated npm package. `test:install` packs the real artifact, installs it into a blank consumer project, and exercises both the hardened CLI and MCP entrypoints.
 
 ## Zero-secret quickstart
 
@@ -159,13 +163,15 @@ Network failures are isolated per source. Timeouts, rate limits, malformed respo
 
 ## Hermes integration
 
+The repository installer is a source-checkout helper and is intentionally not part of the prebuilt npm tarball.
+
 Validate/build wrappers without changing Hermes registration:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh --skip-register
 ```
 
-Full installer path:
+Full source-checkout installer path:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh
@@ -189,6 +195,8 @@ hermes mcp add commerce-control \
   --args "$MCP_JS"
 ```
 
+After an npm global install, MCP hosts can use the installed `commerce-mcp` executable directly; see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+
 On native Termux this direct Node registration was validated against Hermes v0.20.0 and discovered all 11 tools.
 
 ## Validated standalone baseline
@@ -206,10 +214,13 @@ Before the OSS metadata gate, the standalone extraction passed:
 - standalone GitHub Actions CI on the exact initial commit;
 - real Hermes MCP connectivity through the direct Node entrypoint.
 
+GitHub `v0.1.0` is the source-only initial release. The first npm publication must use a new version after the public-package distribution gate passes; npm `0.1.0` must not diverge from the existing GitHub tag.
+
 ## Project and contribution docs
 
 - [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — fresh-clone zero-secret run path.
 - [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) — generic stdio MCP + Hermes walkthrough.
+- [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) — npm install/release contract and adoption measurement.
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — focused development/test loop and CI-equivalent commands.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — contributor-oriented module/data-flow map.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow, security invariants, and AI-assisted contribution policy.
