@@ -2,7 +2,7 @@
 
 Hermes Commerce Control (HCC) is a local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
 
-The project is now a standalone Apache-2.0-licensed repository. The source may be open-sourced independently of package publication: `package.json` intentionally remains `private: true` until a separate release decision explicitly authorizes npm publication.
+The project is a standalone Apache-2.0-licensed repository. The source is public independently of package publication: package/registry release decisions are handled separately from the contributor workflow.
 
 ## What HCC does
 
@@ -31,6 +31,16 @@ The doctor command independently reports the effective security posture. Wallet 
 
 - Node.js `>=24.15.0 <25`
 - npm
+
+## Start here
+
+**Trying HCC:** follow the [zero-secret quickstart](docs/QUICKSTART.md).
+
+**Connecting an MCP client:** use the [MCP integration walkthrough](docs/MCP_INTEGRATION.md).
+
+**Contributing:** read [CONTRIBUTING.md](CONTRIBUTING.md), then use the [development guide](docs/DEVELOPMENT.md) and [architecture map](docs/ARCHITECTURE.md). The [roadmap](ROADMAP.md) describes current direction and non-goals.
+
+New contributors can look for issues labeled `good first issue` and `help wanted`.
 
 ## Build and validate
 
@@ -196,14 +206,17 @@ Before the OSS metadata gate, the standalone extraction passed:
 - standalone GitHub Actions CI on the exact initial commit;
 - real Hermes MCP connectivity through the direct Node entrypoint.
 
-The release candidate remains deliberately unpublished to npm until a separate publication gate approves removing `private: true`.
+## Project and contribution docs
 
-## Contributing and security
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — development workflow, security invariants, and AI-assisted contribution policy.
+- [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — fresh-clone zero-secret run path.
+- [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) — generic stdio MCP + Hermes walkthrough.
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — focused development/test loop and CI-equivalent commands.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — contributor-oriented module/data-flow map.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow, security invariants, and AI-assisted contribution policy.
+- [`ROADMAP.md`](ROADMAP.md) — current project direction and explicit non-goals.
 - [`SECURITY.md`](SECURITY.md) — vulnerability-reporting policy and security-sensitive scope.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — participation standards.
-- [`CHANGELOG.md`](CHANGELOG.md) — v0.1.0 release-candidate notes.
+- [`CHANGELOG.md`](CHANGELOG.md) — release notes.
 
 ## License
 
