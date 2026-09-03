@@ -4,6 +4,26 @@ All notable changes to Hermes Commerce Control will be documented in this file.
 
 The project follows semantic versioning for published releases.
 
+## [0.1.1] - 2026-09-03
+
+First npm-distributable HCC release.
+
+### Added
+
+- Public CLI/MCP package surface for registry consumers.
+- `commerce` and `commerce-mcp` executables installed from the published tarball.
+- Clean-consumer tarball install gate verifying a fresh `npm install` works end-to-end.
+- npm package-name ownership/collision gate confirming the `hermes-commerce-control` name resolves to this repository.
+- v0.1.0 `private: true` publication block removed; npm package is now public.
+
+### Changed
+
+- Source-checkout Hermes installer remains intentionally excluded from the npm package (`files` boundary); registry consumers receive only the distributable `dist/` surface.
+
+### Safety boundary
+
+- Mode-A / zero-secret safety behavior unchanged from v0.1.0: no live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish capability.
+
 ## [0.1.0] - 2026-09-03
 
 Initial standalone open-source release.
