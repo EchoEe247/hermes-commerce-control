@@ -16,7 +16,7 @@ npm ci
 npm run build
 ```
 
-Until the repository is made public, use an authenticated clone of the same repository instead of the public HTTPS example above.
+If you are validating a private pre-release revision, use an authenticated clone of the same repository.
 
 ## 2. Confirm the safety boundary
 
