@@ -2,7 +2,7 @@
 
 Hermes Commerce Control (HCC) is a local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
 
-The project is now a standalone Apache-2.0-licensed repository. The source may be open-sourced independently of package publication: `package.json` intentionally remains `private: true` until a separate release decision explicitly authorizes npm publication.
+The project is a standalone Apache-2.0-licensed repository. Its npm metadata is now public-package-ready, but no registry publication should occur until the distribution gate passes on a new post-v0.1.0 release version.
 
 ## What HCC does
 
@@ -32,6 +32,8 @@ The doctor command independently reports the effective security posture. Wallet 
 - Node.js `>=24.15.0 <25`
 - npm
 
+See [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) for the npm package contract, install paths, release gate, SemVer policy, and adoption measurement rules.
+
 ## Build and validate
 
 ```bash
@@ -41,6 +43,8 @@ npm run build
 npm test
 npm run test:contracts
 npm run test:package
+npm run test:registry
+npm run test:install
 ```
 
 For constrained hosts such as Android/Termux:
@@ -49,7 +53,7 @@ For constrained hosts such as Android/Termux:
 npm run test:serial
 ```
 
-`test:package` runs `npm pack --dry-run` and rejects development-only content such as `src/`, `test/`, `.github/`, `tsconfig.json`, and the package-boundary verifier itself.
+`test:package` runs `npm pack --dry-run` and rejects development-only content such as `src/`, `test/`, `.github/`, `scripts/`, `tsconfig.json`, and the lockfile. `test:install` builds the real tarball, installs it into a blank consumer project, and exercises both hardened CLI and MCP entrypoints. `test:registry` rejects an npm name collision with an unrelated package.
 
 ## Zero-secret quickstart
 
@@ -149,13 +153,15 @@ Network failures are isolated per source. Timeouts, rate limits, malformed respo
 
 ## Hermes integration
 
+The repository installer is for source checkouts and is intentionally not included in the npm tarball.
+
 Validate/build wrappers without changing Hermes registration:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh --skip-register
 ```
 
-Full installer path:
+Full source-checkout installer path:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh
@@ -179,6 +185,8 @@ hermes mcp add commerce-control \
   --args "$MCP_JS"
 ```
 
+After an npm global install, Hermes can instead register the installed `commerce-mcp` executable directly; see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+
 On native Termux this direct Node registration was validated against Hermes v0.20.0 and discovered all 11 tools.
 
 ## Validated standalone baseline
@@ -196,7 +204,7 @@ Before the OSS metadata gate, the standalone extraction passed:
 - standalone GitHub Actions CI on the exact initial commit;
 - real Hermes MCP connectivity through the direct Node entrypoint.
 
-The release candidate remains deliberately unpublished to npm until a separate publication gate approves removing `private: true`.
+GitHub `v0.1.0` remains the source-only initial release. The first npm publication must use a new version after the public-package distribution gate passes, so npm `0.1.0` is not allowed to diverge from the existing GitHub tag.
 
 ## Contributing and security
 
