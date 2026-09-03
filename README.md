@@ -42,7 +42,18 @@ For the npm package contract, install paths, SemVer policy, and release gate, se
 
 **Contributing:** read [CONTRIBUTING.md](CONTRIBUTING.md), then use the [development guide](docs/DEVELOPMENT.md) and [architecture map](docs/ARCHITECTURE.md). The [roadmap](ROADMAP.md) describes current direction and non-goals.
 
-New contributors can look for issues labeled `good first issue` and `help wanted`.
+New contributors can look for issues labeled [`good first issue`](https://github.com/EchoEe247/hermes-commerce-control/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) and [`help wanted`](https://github.com/EchoEe247/hermes-commerce-control/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22).
+
+## Good first contributions
+
+The following issues are intentionally scoped so an outside contributor can make a useful change without learning the entire codebase first:
+
+- [#5 — Add a checked-in generic stdio MCP client example](https://github.com/EchoEe247/hermes-commerce-control/issues/5): small integration/documentation task with a portable example and validation.
+- [#8 — Add a docs contract check for the canonical MCP tool list](https://github.com/EchoEe247/hermes-commerce-control/issues/8): bounded code/test task that prevents the public 11-tool documentation from drifting from the implementation contract.
+- [#4 — Document the local opportunity workflow end to end](https://github.com/EchoEe247/hermes-commerce-control/issues/4): documentation task grounded in the existing opportunity scripts and tests.
+- [#7 — Add an adapter authoring and fixture guide](https://github.com/EchoEe247/hermes-commerce-control/issues/7): deeper documentation task for contributors interested in adapters, hardened fetching, and test fixtures.
+
+Each issue includes acceptance criteria and concrete starting files. Contributions should preserve the Mode-A safety boundary and include the focused validation described in [the development guide](docs/DEVELOPMENT.md).
 
 ## Build and validate
 
