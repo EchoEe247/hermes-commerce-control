@@ -44,6 +44,14 @@ if (packageJson.publishConfig?.access !== "public") {
   fail("package.json publishConfig.access must be public");
 }
 
+function assertRuntimeVersion(label, payload) {
+  if (payload?.version !== packageJson.version) {
+    fail(
+      `${label} reported runtime version ${String(payload?.version)}; expected ${String(packageJson.version)}`,
+    );
+  }
+}
+
 run(npmCommand, ["run", "build"]);
 const packResult = run(npmCommand, ["pack", "--json", "--ignore-scripts"]);
 const packReport = parseJson("npm pack", packResult.stdout)?.[0];
@@ -85,10 +93,21 @@ try {
     PIPRAIL_PRIVATE_KEY: "canary-not-a-real-key",
   };
 
+  const reportedVersion = run(commerce, ["--version"], {
+    cwd: consumerRoot,
+    env: smokeEnv,
+  }).stdout.trim();
+  if (reportedVersion !== packageJson.version) {
+    fail(
+      `commerce --version reported ${reportedVersion}; expected ${String(packageJson.version)}`,
+    );
+  }
+
   const doctor = parseJson(
     "commerce doctor --json",
     run(commerce, ["doctor", "--json"], { cwd: consumerRoot, env: smokeEnv }).stdout,
   );
+  assertRuntimeVersion("commerce doctor --json", doctor);
   const doctorData = doctor.data ?? {};
   if (doctor.ok !== true) fail("clean-installed doctor is not healthy");
   if (doctorData.mode !== "A") fail("clean-installed launcher did not force Mode A");
@@ -100,12 +119,19 @@ try {
     "commerce status --json",
     run(commerce, ["status", "--json"], { cwd: consumerRoot, env: smokeEnv }).stdout,
   );
+  assertRuntimeVersion("commerce status --json", status);
   if (status.ok !== true) fail("clean-installed status command failed");
+  if (status.data?.version !== packageJson.version) {
+    fail(
+      `commerce status data version ${String(status.data?.version)} does not match ${String(packageJson.version)}`,
+    );
+  }
 
   const sources = parseJson(
     "commerce sources --json",
     run(commerce, ["sources", "--json"], { cwd: consumerRoot, env: smokeEnv }).stdout,
   );
+  assertRuntimeVersion("commerce sources --json", sources);
   if (sources.ok !== true) fail("clean-installed sources command failed");
 
   const handshakeInput = [
@@ -149,9 +175,10 @@ try {
       {
         ok: true,
         package: `${packageJson.name}@${packageJson.version}`,
+        runtimeVersion: reportedVersion,
         tarball: tarballName,
         installedCommands: ["commerce", "commerce-mcp"],
-        cliChecks: ["doctor", "status", "sources"],
+        cliChecks: ["--version", "doctor", "status", "sources"],
         mcpTools: names.length,
         zeroSecretStartup: true,
       },
