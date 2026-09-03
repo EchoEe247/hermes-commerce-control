@@ -1,7 +1,6 @@
 {
   "name": "hermes-commerce-control",
   "version": "0.1.0",
-  "private": true,
   "description": "Local-first CLI and MCP control plane for discovery, ranking, evidence capture, and preparation-only agent-commerce workflows.",
   "keywords": [
     "mcp",
@@ -24,13 +23,18 @@
   "engines": {
     "node": ">=24.15.0 <25"
   },
+  "exports": {
+    "./package.json": "./package.json"
+  },
   "files": [
-    "dist",
-    "scripts/install-hermes-commerce-control.sh"
+    "dist"
   ],
   "bin": {
     "commerce": "dist/launch/cli.js",
     "commerce-mcp": "dist/launch/mcp.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -40,6 +44,8 @@
     "test:serial": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
     "test:contracts": "node --import tsx --test test/config.test.ts test/policy.test.ts test/mcp.test.ts test/security-adversarial.test.ts",
     "test:package": "node scripts/verify-package.mjs",
+    "test:install": "node scripts/verify-install.mjs",
+    "test:registry": "node scripts/check-registry.mjs",
     "opportunities:watch": "node --import tsx src/opportunities/cli.ts",
     "opportunities:watch:built": "node dist/opportunities/cli.js",
     "opportunities:review": "node --import tsx src/opportunities/review-cli.ts",
