@@ -1,0 +1,70 @@
+name: Feature request
+description: Propose a scoped improvement to HCC
+title: "[feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For large features, new adapters, public CLI/MCP changes, or safety-policy changes, use this form before implementation so scope and compatibility can be discussed.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and did not find the same request.
+          required: true
+        - label: This request preserves HCC's preparation-only Mode-A boundary, or I explicitly describe any boundary impact below.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What concrete user or contributor problem would this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful behavior change. Avoid implementation detail unless it helps define the contract.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Primary area
+      options:
+        - CLI
+        - MCP
+        - Adapter/source integration
+        - Ranking/aggregation
+        - State/database
+        - Evidence/export
+        - Opportunity subsystem
+        - Network/security
+        - Documentation/developer experience
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility / safety impact
+      description: Note changes to CLI JSON, MCP tools/schemas, persisted state, network behavior, or Mode-A invariants. Write "none known" if applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Acceptance criteria
+      description: What observable behavior/tests would show the request is complete?
+    validations:
+      required: true

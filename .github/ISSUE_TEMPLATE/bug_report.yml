@@ -1,0 +1,101 @@
+name: Bug report
+description: Report a reproducible HCC defect
+title: "[bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not include private keys, seed phrases, wallet credentials, tokens, payment authorization, or other secrets.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed/redacted secrets and private data from this report.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and why it appears incorrect.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Provide the smallest command sequence or MCP call sequence that reproduces the problem.
+      placeholder: |
+        1. npm ci
+        2. npm run build
+        3. node dist/launch/cli.js ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: HCC version / commit
+      description: Release tag or `git rev-parse HEAD` output.
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "v24.x.x"
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS/distribution/runtime, for example Ubuntu 24.04, macOS, Windows, or Android/Termux.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - CLI
+        - MCP
+        - Adapter/discovery
+        - State/database
+        - Evidence/export
+        - Opportunity subsystem
+        - Build/tests
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      description: Paste only the minimum logs/output needed. Redact secrets and personal/private paths where appropriate.
+      render: shell
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Additional validation
+      description: Note any focused tests, `doctor --json`, or related checks you ran.
