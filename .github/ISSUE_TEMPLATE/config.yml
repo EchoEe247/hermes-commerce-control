@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/EchoEe247/hermes-commerce-control/blob/main/SECURITY.md
+    about: Read the security policy before reporting sensitive vulnerabilities. Never post secrets in a public issue.
