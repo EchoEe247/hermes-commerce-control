@@ -1,6 +1,6 @@
 {
   "name": "hermes-commerce-control",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local-first CLI and MCP control plane for discovery, ranking, evidence capture, and preparation-only agent-commerce workflows.",
   "keywords": [
     "mcp",

@@ -4,6 +4,20 @@ All notable changes to Hermes Commerce Control will be documented in this file.
 
 The project follows semantic versioning for published releases.
 
+## [0.1.2] - 2026-09-03
+
+Runtime-version correctness patch for the published package.
+
+### Changed
+
+- Runtime CLI/MCP metadata now derives its version from `package.json`.
+- `commerce --version` and CLI JSON now report the published package version.
+- The clean-consumer release gate now prevents package/runtime version drift.
+
+### Unchanged
+
+- No Mode-A, MCP tool-set, package-export, or dependency-contract changes.
+
 ## [0.1.1] - 2026-09-03
 
 First npm-distributable HCC release.
