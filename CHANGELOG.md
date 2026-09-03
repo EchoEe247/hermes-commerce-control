@@ -4,9 +4,9 @@ All notable changes to Hermes Commerce Control will be documented in this file.
 
 The project follows semantic versioning for published releases.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-09-03
 
-Initial standalone open-source release candidate.
+Initial standalone open-source release.
 
 ### Added
 
@@ -29,8 +29,8 @@ Initial standalone open-source release candidate.
 - 562/562 full tests passed on Pixel 6a / Android 17 / native Termux.
 - 68/68 contract tests passed.
 - Standalone GitHub Actions CI passed on Node 24.
-- Package boundary passed with 95 files in the pre-license standalone package validation.
-- Full and runtime-only npm audits reported zero vulnerabilities at the extraction gate.
+- Package boundary passed with 96 files after adding OSS metadata and the license.
+- Full and runtime-only npm audits reported zero vulnerabilities.
 - Real Hermes MCP integration discovered exactly 11 tools through the direct Node entrypoint.
 
 ### Safety boundary
@@ -39,4 +39,4 @@ Version 0.1.0 intentionally does **not** expose live pay, purchase, claim, settl
 
 ### Publication status
 
-The repository may be licensed before package publication. `private: true` remains authoritative until a separate release decision explicitly approves npm publication.
+The v0.1.0 plan is a GitHub source release first. `private: true` remains authoritative for the npm package until a separate package-publication decision explicitly approves removing it and publishing to a registry.
