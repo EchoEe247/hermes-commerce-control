@@ -34,6 +34,10 @@ jobs:
         run: npm run test:contracts
       - name: Verify package boundary
         run: npm run test:package
+      - name: Verify npm registry name ownership
+        run: npm run test:registry
+      - name: Verify clean consumer install
+        run: npm run test:install
       - name: Audit full tree
         run: npm audit --audit-level=moderate
       - name: Audit runtime tree
