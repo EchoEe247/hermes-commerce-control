@@ -1,0 +1,115 @@
+name: Integration / compatibility report
+description: Report a real HCC run, client integration, platform result, or compatibility finding.
+title: "[integration]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Hermes Commerce Control with a real setup.
+
+        Use this form for successful integrations, compatibility findings, or reproducible environment-specific results. For a defect that needs a fix, the bug report form is also appropriate.
+
+        Do not include wallet keys, seed phrases, signing keys, exchange credentials, payment authorization, access tokens, or other secrets.
+
+  - type: input
+    id: hcc_revision
+    attributes:
+      label: HCC version or commit
+      description: Provide the npm version, Git tag, or Git commit you actually ran.
+      placeholder: "v0.1.0, 2baa9e6, or npm version when applicable"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: entrypoint
+    attributes:
+      label: HCC entrypoint used
+      options:
+        - CLI
+        - MCP server
+        - Both CLI and MCP
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client or host
+      description: For MCP runs, name the client/host and version if known. Enter N/A for CLI-only runs.
+      placeholder: "Hermes 0.20.0, Claude Desktop, another MCP client, or N/A"
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system/device/runtime environment.
+      placeholder: "Android 17 / Termux, Ubuntu 24.04, macOS, Windows, etc."
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "v24.x"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_path
+    attributes:
+      label: Install / run path
+      options:
+        - Source checkout (npm ci + build)
+        - npm global install
+        - npm project-local install
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands or client configuration used
+      description: Include the minimum reproducible commands/configuration, with all secrets removed.
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Works as expected
+        - Works with caveats
+        - Compatibility problem
+        - Could not complete setup
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened?
+      description: Describe what worked, what failed, or what other users on the same setup should know.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Non-sensitive evidence
+      description: Optional sanitized doctor/status output, MCP tool count, error text, or other evidence. Remove paths or identifiers you do not want public.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed secrets, wallet/signing material, access tokens, and payment credentials from this report.
+          required: true
+        - label: This report reflects a real run or integration attempt; it was not created to manufacture project adoption metrics.
+          required: true
