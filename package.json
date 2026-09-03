@@ -11,9 +11,14 @@
     "commerce",
     "typescript"
   ],
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EchoEe247/hermes-commerce-control.git"
+  },
+  "homepage": "https://github.com/EchoEe247/hermes-commerce-control#readme",
+  "bugs": {
+    "url": "https://github.com/EchoEe247/hermes-commerce-control/issues"
   },
   "type": "module",
   "engines": {
