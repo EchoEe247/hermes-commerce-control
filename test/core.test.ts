@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildAppMetadata } from "../src/app.js";
+import { APP_VERSION, buildAppMetadata } from "../src/app.js";
 import {
   normalizeDecimalString,
   compareDecimalStrings,
@@ -26,7 +26,7 @@ import { CommerceError, isCommerceError } from "../src/core/errors.js";
 test("app metadata is Mode A", () => {
   assert.deepEqual(buildAppMetadata(), {
     name: "hermes-commerce-control",
-    version: "0.1.0",
+    version: APP_VERSION,
     mode: "A",
   });
 });
