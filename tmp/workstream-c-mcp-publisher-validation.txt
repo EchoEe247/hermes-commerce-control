@@ -1,0 +1,6 @@
+Validating against https://registry.modelcontextprotocol.io...
+✅ server.json is valid
+
+validator_exit=0
+validated_at_utc=2026-09-04T09:40:47Z
+publisher_url=https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz
