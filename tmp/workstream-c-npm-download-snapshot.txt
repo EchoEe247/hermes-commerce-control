@@ -1,4 +1,4 @@
-captured_at_utc=2026-09-04T09:36:52Z
+captured_at_utc=2026-09-04T09:40:05Z
 query_1_url=https://api.npmjs.org/downloads/point/2026-09-03:2026-09-03/hermes-commerce-control
 query_1_http_status=404
 query_1_raw={"error":"package hermes-commerce-control not found"}
