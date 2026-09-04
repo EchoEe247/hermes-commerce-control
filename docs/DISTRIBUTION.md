@@ -1,8 +1,8 @@
 # Distribution and package contract
 
-Hermes Commerce Control (HCC) is distributed as a prebuilt Node.js CLI and MCP server.
+Hermes Commerce Control (HCC) is distributed as a prebuilt Node.js CLI and MCP server through npm.
 
-This document defines the supported npm surface, the release gate, and the metrics that may be used to measure real adoption.
+The canonical public package is currently **`hermes-commerce-control@0.1.2`**. This document defines the supported npm surface, release gate, current Registry state, and the metrics that may be used to measure real adoption.
 
 ## Supported package surface
 
@@ -23,7 +23,7 @@ This keeps the compatibility promise narrow enough to version safely while the p
 
 ## Install from npm
 
-After the first registry release:
+Global installation:
 
 ```bash
 npm install --global hermes-commerce-control
@@ -57,7 +57,7 @@ The repository-only `scripts/install-hermes-commerce-control.sh` remains a sourc
 
 ## Release gate
 
-A registry publication is allowed only after all of the following pass on the exact release candidate:
+A new registry publication is allowed only after all of the following pass on the exact release candidate:
 
 ```bash
 npm ci
@@ -89,24 +89,84 @@ npm audit --omit=dev --audit-level=moderate
 - hostile inherited activation flags are forced back to Mode A;
 - `commerce status --json` and `commerce sources --json` work outside the source tree;
 - `commerce-mcp` completes a stdio initialize/tools-list handshake;
-- exactly the canonical 11 MCP tools are exposed.
+- exactly the canonical 11 MCP tools are exposed;
+- runtime-reported version matches the package artifact.
 
-## First npm release
+## Published npm baseline
 
-GitHub release `v0.1.0` was intentionally source-only and its release notes state that npm publication was deferred. Do **not** publish a different artifact under npm version `0.1.0`.
+Release history:
 
-The first npm publication must therefore use a new version, normally `0.1.1`, after the distribution changes are merged and validated.
+- `v0.1.0` was intentionally source-only. Its existing GitHub tag must never be reused for a different npm artifact.
+- `v0.1.1` was the first public npm release.
+- `v0.1.2` is the current canonical npm/GitHub patch release. It corrected runtime/package version drift and added the clean-consumer regression gate.
 
-Credentialed publication is executed from Hermes/local release tooling so registry credentials remain outside ChatGPT. The release operator should:
+Current package:
 
-1. update `package.json` and `package-lock.json` to the new patch version;
-2. rerun the full release gate above;
-3. create the matching Git commit and `vX.Y.Z` tag;
-4. publish the exact tagged tree with `npm publish --access public --provenance` when the local npm client/account supports provenance;
-5. create or update the matching GitHub release;
-6. verify registry metadata and install the published version into another clean directory.
+```text
+name:    hermes-commerce-control
+latest:  0.1.2
+bins:    commerce, commerce-mcp
+exports: ./package.json only
+```
 
-A release is not complete merely because `npm publish` returned success; the published artifact must pass the same CLI/MCP smoke checks.
+Published versions are immutable. Never retag, overwrite, or republish an existing version in place.
+
+## Future npm release procedure
+
+Credentialed publication is executed from Hermes/local release tooling so registry credentials remain outside ChatGPT.
+
+For a future release, the release operator should:
+
+1. update all package/release metadata to the new SemVer version;
+2. rerun the full release gate above on the exact candidate;
+3. merge only the reviewed release candidate;
+4. create the matching Git commit and `vX.Y.Z` tag;
+5. publish the exact tagged tree with `npm publish --access public --provenance` when the local npm client/account supports provenance;
+6. create/update the matching GitHub release;
+7. verify live npm metadata;
+8. install the published version into a clean consumer directory and repeat CLI/MCP/version smoke checks.
+
+A release is not complete merely because `npm publish` returned success; the public artifact must match the tagged source and pass the documented consumer contract.
+
+## Official MCP Registry state
+
+The Official MCP Registry is a separate distribution surface from npm.
+
+Current first-party Registry rules reverified on 2026-09-04 establish that:
+
+- public npm packages are supported;
+- `stdio` package transport is supported;
+- publication uses a `server.json` manifest;
+- npm ownership verification requires the published npm package to contain an `mcpName` that exactly matches the Registry server name;
+- GitHub authentication can authorize the `io.github.<user>/*` namespace;
+- Registry publication happens after the referenced npm package/version exists publicly.
+
+Published `hermes-commerce-control@0.1.2` does **not** contain `mcpName`, so it cannot be legitimately registered as-is.
+
+A narrowly scoped **0.1.3 Registry-compatibility candidate** was prepared on branch `cycle2/mcp-registry-0.1.3` / PR #13 with:
+
+- `mcpName: io.github.EchoEe247/hermes-commerce-control`;
+- matching current-schema `server.json` npm/stdio metadata;
+- package-boundary checks tying Registry name/version/package/transport to the npm artifact;
+- unchanged `commerce` + `commerce-mcp` binaries and `./package.json`-only JavaScript export;
+- unchanged Mode A, zero-secret startup, and exactly 11 MCP tools.
+
+The candidate passed current `mcp-publisher validate server.json` and the full candidate CI gate, including 562/562 tests, 68/68 contracts, clean consumer/version/MCP checks, and full/runtime npm audits at 0 vulnerabilities.
+
+PR #13 is **closed without merge** and the candidate is dormant/recoverable. There is no public 0.1.3 package and no Official MCP Registry entry. **0.1.2 remains canonical.**
+
+If Angel intentionally resumes this path, the correct sequence is:
+
+1. refresh current Registry/npm requirements;
+2. reopen/review the dormant candidate and perform the authorized Hermes/local validation;
+3. merge only if still clean;
+4. publish `hermes-commerce-control@0.1.3` through the authenticated npm path;
+5. independently verify the public package/runtime contract;
+6. authenticate `mcp-publisher` with the authorized GitHub identity;
+7. publish `server.json`;
+8. verify the exact Registry entry and preserve a publication receipt.
+
+Do not add a third npm binary or broaden the public package surface merely to accommodate generic executable inference unless real client integration evidence justifies that compatibility change.
 
 ## SemVer policy
 
@@ -124,25 +184,31 @@ Removing or renaming a documented executable, CLI command, MCP tool, required fi
 
 Only organic external use counts. Never create downloads, dependents, repositories, or packages for the purpose of inflating metrics.
 
-Useful registry checks after publication include:
+Useful registry checks include:
 
 ```bash
 npm view hermes-commerce-control version dist-tags repository
 npm view hermes-commerce-control time --json
 ```
 
-The npm downloads API can be used for auditable download counts:
+The npm Downloads API can be used for auditable raw download counts when it returns data:
 
 ```text
 https://api.npmjs.org/downloads/point/last-month/hermes-commerce-control
 ```
 
-Record the returned period, package name, and download count together. Do not convert local installs, CI loops, or synthetic traffic into claimed adoption.
+As of the 2026-09-04 Cycle 2 measurement, the Downloads API returned HTTP 404 `package hermes-commerce-control not found` for the checked 2026-09-03/04 windows even though registry metadata and package installation were live. The download metric is therefore **UNAVAILABLE / UNVERIFIED**, not zero.
 
-Dependent repository/package counts should be recorded from public ecosystem evidence with the observation date and source. Private repositories and projects controlled only to manufacture a dependency relationship do not count as external adoption.
+When data becomes available, record the returned period, package name, raw download count, timestamp, and source. Do not equate downloads with unique users. Known maintainer/release-validation installs should be disclosed as a caveat without inventing an unsupported subtraction.
+
+Dependent repository/package counts require machine-verifiable consumption evidence such as a package manifest, lockfile, install/setup dependency edge, or equivalent. Text mentions, review logs, indexes, copied release notes, synthetic consumers, and owner-created qualification fixtures do not count as external dependencies.
+
+Current confirmed external dependent repositories/packages: **0 / 0**.
 
 ## Publication status
 
-Source release: available on GitHub.
-
-npm package: publication is gated on the distribution PR passing CI, a new post-v0.1.0 version being created, and the credentialed Hermes publication step.
+- GitHub source releases: live through **v0.1.2**.
+- npm package: **`hermes-commerce-control@0.1.2` live and canonical**.
+- npm Downloads API: **UNAVAILABLE / UNVERIFIED** at the latest checked window.
+- Official MCP Registry: **not yet published**.
+- Registry-compatible 0.1.3 candidate: **validated, closed unmerged, dormant/recoverable, not public**.
