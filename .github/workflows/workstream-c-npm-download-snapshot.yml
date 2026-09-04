@@ -1,0 +1,49 @@
+name: Workstream C npm download snapshot
+
+on:
+  push:
+    paths:
+      - ".github/workflows/workstream-c-npm-download-snapshot.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: cycle2/mcp-registry-0.1.3
+
+      - name: Query npm Downloads API without package downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tmp
+          captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          url_day1='https://api.npmjs.org/downloads/point/2026-09-03:2026-09-03/hermes-commerce-control'
+          url_day2='https://api.npmjs.org/downloads/point/2026-09-04:2026-09-04/hermes-commerce-control'
+          url_range='https://api.npmjs.org/downloads/point/2026-09-03:2026-09-04/hermes-commerce-control'
+          day1="$(curl --fail --silent --show-error --location "$url_day1")"
+          day2="$(curl --fail --silent --show-error --location "$url_day2")"
+          range="$(curl --fail --silent --show-error --location "$url_range")"
+          {
+            printf 'captured_at_utc=%s\n' "$captured_at"
+            printf 'query_1_url=%s\n' "$url_day1"
+            printf 'query_1_raw=%s\n' "$day1"
+            printf 'query_2_url=%s\n' "$url_day2"
+            printf 'query_2_raw=%s\n' "$day2"
+            printf 'query_3_url=%s\n' "$url_range"
+            printf 'query_3_raw=%s\n' "$range"
+          } > tmp/workstream-c-npm-download-snapshot.txt
+
+      - name: Commit snapshot to measurement branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp/workstream-c-npm-download-snapshot.txt
+          git commit -m 'chore: record npm download API snapshot'
+          git push origin HEAD:cycle2/mcp-registry-0.1.3
