@@ -2,7 +2,7 @@
 
 Hermes Commerce Control (HCC) is a local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
 
-The project is a standalone Apache-2.0-licensed repository. Its npm metadata is public-package-ready, while registry publication remains a separate release action gated on clean-install and package-name checks.
+The project is a standalone Apache-2.0-licensed repository. The canonical npm release is **`hermes-commerce-control@0.1.2`**. Published releases are immutable; future package or registry changes use a new SemVer release and the same clean-install/package/runtime validation gates.
 
 ## What HCC does
 
@@ -32,7 +32,7 @@ The doctor command independently reports the effective security posture. Wallet 
 - Node.js `>=24.15.0 <25`
 - npm
 
-For the npm package contract, install paths, SemVer policy, and release gate, see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+For the npm package contract, install paths, SemVer policy, current publication state, and release gate, see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
 
 ## Start here
 
@@ -74,7 +74,25 @@ For constrained hosts such as Android/Termux:
 npm run test:serial
 ```
 
-`test:package` verifies the compiled-only npm boundary and public executable contract. `test:registry` rejects a package-name collision with an unrelated npm package. `test:install` packs the real artifact, installs it into a blank consumer project, and exercises both the hardened CLI and MCP entrypoints.
+`test:package` verifies the compiled-only npm boundary and public executable contract. `test:registry` verifies that the live npm package name belongs to this repository. `test:install` packs the real artifact, installs it into a blank consumer project, and exercises both the hardened CLI and MCP entrypoints.
+
+## Install from npm
+
+```bash
+npm install --global hermes-commerce-control
+commerce doctor --json
+commerce status --json
+commerce sources --json
+```
+
+A project-local installation can use:
+
+```bash
+npm install hermes-commerce-control
+npm exec -- commerce doctor --json
+```
+
+The canonical public version is currently **0.1.2**.
 
 ## Zero-secret quickstart
 
@@ -210,7 +228,7 @@ After an npm global install, MCP hosts can use the installed `commerce-mcp` exec
 
 On native Termux this direct Node registration was validated against Hermes v0.20.0 and discovered all 11 tools.
 
-## Validated standalone baseline
+## Validated release history
 
 Before the OSS metadata gate, the standalone extraction passed:
 
@@ -225,7 +243,13 @@ Before the OSS metadata gate, the standalone extraction passed:
 - standalone GitHub Actions CI on the exact initial commit;
 - real Hermes MCP connectivity through the direct Node entrypoint.
 
-GitHub `v0.1.0` is the source-only initial release. The first npm publication must use a new version after the public-package distribution gate passes; npm `0.1.0` must not diverge from the existing GitHub tag.
+Release history:
+
+- `v0.1.0` — source-only initial release; npm publication was intentionally deferred.
+- `v0.1.1` — first public npm release.
+- `v0.1.2` — current canonical patch release; corrected runtime/package version drift and added a clean-consumer regression gate.
+
+The Official MCP Registry is a separate distribution surface. Published `0.1.2` does not contain the current Registry-required npm `mcpName`, so it is not registered as-is. A validated 0.1.3 Registry-compatibility candidate may be resumed through a future reviewed/authenticated release path; until that release actually succeeds, **0.1.2 remains canonical**.
 
 ## Project and contribution docs
 
