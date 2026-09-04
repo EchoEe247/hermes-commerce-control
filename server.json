@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.EchoEe247/hermes-commerce-control",
+  "title": "Hermes Commerce Control",
+  "description": "Local-first MCP control plane for safe discovery, ranking, evidence, and preparation-only commerce.",
+  "repository": {
+    "url": "https://github.com/EchoEe247/hermes-commerce-control",
+    "source": "github"
+  },
+  "version": "0.1.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "hermes-commerce-control",
+      "version": "0.1.3",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
