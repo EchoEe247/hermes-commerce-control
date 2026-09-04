@@ -1,6 +1,7 @@
 {
   "name": "hermes-commerce-control",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "mcpName": "io.github.EchoEe247/hermes-commerce-control",
   "description": "Local-first CLI and MCP control plane for discovery, ranking, evidence capture, and preparation-only agent-commerce workflows.",
   "keywords": [
     "mcp",
