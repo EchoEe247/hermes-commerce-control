@@ -4,17 +4,56 @@ import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
 const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+const registryManifest = JSON.parse(
+  await readFile(new URL("../server.json", import.meta.url), "utf8"),
+);
 const errors = [];
+const expectedMcpName = "io.github.EchoEe247/hermes-commerce-control";
+const expectedSchema = "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json";
 
 if (manifest.private === true) errors.push("package.json still sets private:true");
 if (manifest.publishConfig?.access !== "public") {
   errors.push("publishConfig.access must be public");
 }
+if (manifest.mcpName !== expectedMcpName) {
+  errors.push(`package.json mcpName must be ${expectedMcpName}`);
+}
+if (registryManifest.$schema !== expectedSchema) {
+  errors.push(`server.json schema must be ${expectedSchema}`);
+}
+if (registryManifest.name !== manifest.mcpName) {
+  errors.push("server.json name must match package.json mcpName");
+}
+if (registryManifest.version !== manifest.version) {
+  errors.push("server.json version must match package.json version");
+}
+const registryPackages = Array.isArray(registryManifest.packages) ? registryManifest.packages : [];
+if (registryPackages.length !== 1) {
+  errors.push("server.json must describe exactly one published package");
+}
+const registryPackage = registryPackages[0] ?? {};
+if (registryPackage.registryType !== "npm") {
+  errors.push("server.json package registryType must be npm");
+}
+if (registryPackage.identifier !== manifest.name) {
+  errors.push("server.json npm identifier must match package.json name");
+}
+if (registryPackage.version !== manifest.version) {
+  errors.push("server.json npm version must match package.json version");
+}
+if (registryPackage.transport?.type !== "stdio") {
+  errors.push("server.json package transport must remain stdio");
+}
+
 if (manifest.bin?.commerce !== "dist/launch/cli.js") {
   errors.push("commerce bin must target dist/launch/cli.js");
 }
 if (manifest.bin?.["commerce-mcp"] !== "dist/launch/mcp.js") {
   errors.push("commerce-mcp bin must target dist/launch/mcp.js");
+}
+const binKeys = Object.keys(manifest.bin ?? {}).sort();
+if (JSON.stringify(binKeys) !== JSON.stringify(["commerce", "commerce-mcp"])) {
+  errors.push("0.x package must expose exactly commerce and commerce-mcp binaries");
 }
 const exportKeys = Object.keys(manifest.exports ?? {}).sort();
 if (JSON.stringify(exportKeys) !== JSON.stringify(["./package.json"])) {
@@ -90,11 +129,20 @@ process.stdout.write(
     {
       ok: true,
       package: `${manifest.name}@${manifest.version}`,
+      mcpName: manifest.mcpName,
+      registryManifest: {
+        schema: registryManifest.$schema,
+        name: registryManifest.name,
+        version: registryManifest.version,
+        registryType: registryPackage.registryType,
+        identifier: registryPackage.identifier,
+        transport: registryPackage.transport?.type,
+      },
       fileCount: files.length,
       unpackedSize: packed?.unpackedSize ?? null,
       packageSize: packed?.size ?? null,
       publicSurface: {
-        bins: Object.keys(manifest.bin ?? {}).sort(),
+        bins: binKeys,
         javascriptExports: exportKeys,
       },
       required,
