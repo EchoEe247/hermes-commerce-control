@@ -4,6 +4,29 @@ All notable changes to Hermes Commerce Control will be documented in this file.
 
 The project follows semantic versioning for published releases.
 
+## [0.1.3] - Unreleased
+
+Official MCP Registry compatibility candidate.
+
+### Added
+
+- npm `mcpName` ownership metadata for `io.github.EchoEe247/hermes-commerce-control`.
+- Current-schema `server.json` metadata for the existing public npm package and stdio MCP transport.
+- Package-boundary checks that lock Registry name/version/package/transport metadata to the npm package and preserve the exact two-binary 0.x surface.
+
+### Unchanged
+
+- Mode A and zero-secret startup remain mandatory.
+- The MCP tool set remains exactly 11 canonical tools.
+- The supported public package surface remains CLI/MCP-only with `commerce` and `commerce-mcp`.
+- `./package.json` remains the only JavaScript export.
+- Runtime dependencies and live-value/write policy are unchanged.
+
+### Publication status
+
+- This is a release candidate only until the authenticated npm and Official MCP Registry publication path is executed and independently verified.
+- Published `v0.1.2` remains immutable and canonical until a successful new SemVer release.
+
 ## [0.1.2] - 2026-09-03
 
 Runtime-version correctness patch for the published package.
