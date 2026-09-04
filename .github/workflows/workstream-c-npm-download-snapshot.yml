@@ -26,17 +26,22 @@ jobs:
           url_day1='https://api.npmjs.org/downloads/point/2026-09-03:2026-09-03/hermes-commerce-control'
           url_day2='https://api.npmjs.org/downloads/point/2026-09-04:2026-09-04/hermes-commerce-control'
           url_range='https://api.npmjs.org/downloads/point/2026-09-03:2026-09-04/hermes-commerce-control'
-          day1="$(curl --fail --silent --show-error --location "$url_day1")"
-          day2="$(curl --fail --silent --show-error --location "$url_day2")"
-          range="$(curl --fail --silent --show-error --location "$url_range")"
+
+          status_day1="$(curl --silent --show-error --location --output /tmp/day1.body --write-out '%{http_code}' "$url_day1")"
+          status_day2="$(curl --silent --show-error --location --output /tmp/day2.body --write-out '%{http_code}' "$url_day2")"
+          status_range="$(curl --silent --show-error --location --output /tmp/range.body --write-out '%{http_code}' "$url_range")"
+
           {
             printf 'captured_at_utc=%s\n' "$captured_at"
             printf 'query_1_url=%s\n' "$url_day1"
-            printf 'query_1_raw=%s\n' "$day1"
+            printf 'query_1_http_status=%s\n' "$status_day1"
+            printf 'query_1_raw='; cat /tmp/day1.body; printf '\n'
             printf 'query_2_url=%s\n' "$url_day2"
-            printf 'query_2_raw=%s\n' "$day2"
+            printf 'query_2_http_status=%s\n' "$status_day2"
+            printf 'query_2_raw='; cat /tmp/day2.body; printf '\n'
             printf 'query_3_url=%s\n' "$url_range"
-            printf 'query_3_raw=%s\n' "$range"
+            printf 'query_3_http_status=%s\n' "$status_range"
+            printf 'query_3_raw='; cat /tmp/range.body; printf '\n'
           } > tmp/workstream-c-npm-download-snapshot.txt
 
       - name: Commit snapshot to measurement branch
