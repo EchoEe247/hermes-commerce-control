@@ -138,6 +138,7 @@ try {
     '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"package-smoke","version":"1.0.0"}}}',
     '{"jsonrpc":"2.0","method":"notifications/initialized"}',
     '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}',
+    '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"commerce_inspect","arguments":{"target":"--version"}}}',
     "",
   ].join("\n");
   const handshake = run(commerceMcp, [], {
@@ -168,6 +169,10 @@ try {
   ].sort();
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     fail(`clean-installed MCP tool set drifted: ${names.join(",")}`, handshake);
+  }
+  const targetError = messages.find((message) => message.id === 3)?.result;
+  if (targetError?.isError !== true || targetError?.structuredContent?.error?.code !== "INVALID_INPUT") {
+    fail("clean-installed MCP interpreted a target as a CLI option", handshake);
   }
 
   process.stdout.write(

@@ -6,8 +6,38 @@ import { CommerceError } from "../src/core/errors.js";
 import { modeAServiceActionability } from "../src/core/models.js";
 import type { CommerceAdapter, AdapterContext } from "../src/adapters/interface.js";
 import { AdapterRegistry } from "../src/adapters/registry.js";
+import { PipRailAdapter } from "../src/adapters/piprail/index.js";
+import { runCli } from "../src/cli.js";
 
 const cfg = loadConfig({});
+
+test("SDK operations that ignore abort cannot outlive the command budget", async () => {
+  const adapter = new PipRailAdapter(async () => ({ discover: async () => new Promise(() => {}) }));
+  const env = { COMMERCE_ADAPTER_BUDGET_MS: "1000" };
+  const registry = new AdapterRegistry(loadConfig(env), [adapter]);
+  let guard: ReturnType<typeof setTimeout> | undefined;
+  try {
+    let stdout = "";
+    const outcome = await Promise.race([
+      Promise.all([
+        registry.discoverServices({}),
+        registry.probeAll(),
+        runCli(["inspect", "piprail:https://example.com/resource", "--json"], {
+          stdout: (chunk) => { stdout += chunk; }, stderr: () => {},
+        }, { env, adapters: [adapter] }),
+      ]),
+      new Promise<"hung">((resolve) => { guard = setTimeout(() => resolve("hung"), 2_500); }),
+    ]);
+    assert.notEqual(outcome, "hung");
+    if (outcome === "hung") return;
+    assert.equal(outcome[0].sources.piprail?.error, "UPSTREAM_TIMEOUT");
+    assert.equal(outcome[1][0]?.errorCode, "UPSTREAM_TIMEOUT");
+    assert.equal(outcome[2], 1);
+    assert.equal(JSON.parse(stdout).error.code, "UPSTREAM_TIMEOUT");
+  } finally {
+    clearTimeout(guard);
+  }
+});
 
 function fakeService(id: string, source: "cdp_bazaar" | "agent402" | "the402") {
   return {

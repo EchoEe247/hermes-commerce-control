@@ -481,6 +481,36 @@ function buildTaskBody(
   });
 }
 
+/** Bound bytes as they arrive, while the request deadline remains active. */
+async function readBoundedSuccessBody(response: Response): Promise<string> {
+  const maxBytes = 1_000_000;
+  const tooLarge = () => new Error(
+    "GiveGigs success response is unexpectedly large; the idempotency claim remains pending for reconciliation",
+  );
+  const declared = response.headers.get("content-length");
+  if (declared !== null && Number.parseInt(declared, 10) > maxBytes) {
+    await response.body?.cancel();
+    throw tooLarge();
+  }
+  if (response.body === null) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > maxBytes) throw tooLarge();
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, bytes).toString("utf8");
+}
+
 /**
  * Concrete GiveGigs OFFSITE_PAY public-task transport.
  *
@@ -532,67 +562,69 @@ export class GiveGigsHumanRecruitmentTransport implements HumanRecruitmentTransp
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-    let response: Response;
     try {
-      response = await this.fetchImpl(GIVEGIGS_TASKS_ENDPOINT, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey,
-        },
-        body: JSON.stringify(taskBody),
-        signal: controller.signal,
-      });
-    } catch (error) {
-      throw new Error(
-        "GiveGigs recruitment POST outcome is ambiguous; the idempotency claim remains pending until remote reconciliation",
-        { cause: error },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-
-    if (!response.ok) {
-      if (safeNoMutationStatus(response.status)) {
-        await this.idempotencyStore.releaseAfterConfirmedNoMutation(
-          input.idempotencyKey,
-          requestHash,
-          `provider returned definitive no-create HTTP ${String(response.status)}`,
-          this.clock(),
+      let response: Response;
+      try {
+        response = await this.fetchImpl(GIVEGIGS_TASKS_ENDPOINT, {
+          method: "POST",
+          redirect: "error",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey,
+          },
+          body: JSON.stringify(taskBody),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        throw new Error(
+          "GiveGigs recruitment POST outcome is ambiguous; the idempotency claim remains pending until remote reconciliation",
+          { cause: error },
         );
       }
-      throw new Error(`GiveGigs task creation failed with HTTP ${String(response.status)}`);
-    }
 
-    const contentLength = response.headers.get("content-length");
-    if (contentLength !== null && Number.parseInt(contentLength, 10) > 1_000_000) {
-      throw new Error(
-        "GiveGigs success response is unexpectedly large; the idempotency claim remains pending for reconciliation",
-      );
+      if (!response.ok) {
+        if (safeNoMutationStatus(response.status)) {
+          await this.idempotencyStore.releaseAfterConfirmedNoMutation(
+            input.idempotencyKey,
+            requestHash,
+            `provider returned definitive no-create HTTP ${String(response.status)}`,
+            this.clock(),
+          );
+        }
+        throw new Error(`GiveGigs task creation failed with HTTP ${String(response.status)}`);
+      }
+
+      let raw: string;
+      try {
+        raw = await readBoundedSuccessBody(response);
+      } catch (error) {
+        throw new Error(
+          "GiveGigs response could not be read within its bounds; the idempotency claim remains pending for reconciliation",
+          { cause: error },
+        );
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (error) {
+        throw new Error(
+          "GiveGigs success response is malformed; the idempotency claim remains pending for reconciliation",
+          { cause: error },
+        );
+      }
+      if (typeof parsed !== "object" || parsed === null || (parsed as { success?: unknown }).success !== true) {
+        throw new Error(
+          "GiveGigs success response did not confirm task creation; the idempotency claim remains pending for reconciliation",
+        );
+      }
+      const externalReference = validateTaskUrl((parsed as { taskUrl?: unknown }).taskUrl);
+      await this.idempotencyStore.complete(input.idempotencyKey, requestHash, externalReference, this.clock());
+      return Object.freeze({ externalReference });
+    } finally {
+      clearTimeout(timer);
+      // Also dispose of unread error/oversized bodies and their sockets.
+      controller.abort();
     }
-    const raw = await response.text();
-    if (raw.length > 1_000_000) {
-      throw new Error(
-        "GiveGigs success response is unexpectedly large; the idempotency claim remains pending for reconciliation",
-      );
-    }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (error) {
-      throw new Error(
-        "GiveGigs success response is malformed; the idempotency claim remains pending for reconciliation",
-        { cause: error },
-      );
-    }
-    if (typeof parsed !== "object" || parsed === null || (parsed as { success?: unknown }).success !== true) {
-      throw new Error(
-        "GiveGigs success response did not confirm task creation; the idempotency claim remains pending for reconciliation",
-      );
-    }
-    const externalReference = validateTaskUrl((parsed as { taskUrl?: unknown }).taskUrl);
-    await this.idempotencyStore.complete(input.idempotencyKey, requestHash, externalReference, this.clock());
-    return Object.freeze({ externalReference });
   }
 }

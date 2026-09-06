@@ -3,6 +3,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { createServer } from "node:http";
+import { once } from "node:events";
 import { loadConfig } from "../src/config.js";
 import {
   buildGiveGigsRecruitmentTarget,
@@ -78,6 +80,62 @@ function exactConfigForPayload(payload: ReturnType<typeof buildHumanRecruitmentP
       HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID: prepared.intentId,
     }),
   };
+}
+
+for (const scenario of ["redirect", "stalled-body", "oversized-body"] as const) {
+  test(`GiveGigs rejects ${scenario} and keeps the claim pending`, async () => {
+    const root = await mkdtemp(join(tmpdir(), "givegigs-network-"));
+    let redirectedHits = 0;
+    const server = createServer((req, res) => {
+      if (req.url === "/redirected") {
+        redirectedHits += 1;
+        res.end(JSON.stringify({ success: true, taskUrl: "https://givegigs.com/ai/gigs/tasks/unapproved" }));
+      } else if (scenario === "redirect") {
+        res.writeHead(307, { location: "/redirected" });
+        res.end();
+      } else {
+        res.writeHead(200);
+        res.write(scenario === "oversized-body" ? "x".repeat(1_000_001) : "{");
+        // Keep the body open: the request deadline and streaming cap must apply.
+      }
+    });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    assert.ok(address !== null && typeof address !== "string");
+    const payload = buildHumanRecruitmentPayload(REMOTE_CONTRACT,
+      buildGiveGigsRecruitmentTarget(REMOTE_POSTING, "2026-08-30T12:00:00.000Z"));
+    const { prepared, config } = exactConfigForPayload(payload);
+    let fetchCalls = 0;
+    const transport = new GiveGigsHumanRecruitmentTransport({
+      posting: REMOTE_POSTING,
+      apiKeyProvider: () => "givegigs-local-test-key",
+      idempotencyStore: new JsonlGiveGigsIdempotencyStore(join(root, "journal.jsonl")),
+      requestTimeoutMs: 1_000,
+      fetchImpl: async (_url, init) => {
+        fetchCalls += 1;
+        return fetch(`http://127.0.0.1:${address.port}/start`, init);
+      },
+    });
+    const execute = () => executeHumanRecruitmentAction(config, payload, prepared, transport,
+      () => "2026-08-30T12:02:00.000Z");
+    let guard: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const outcome = await Promise.race([
+        execute().then(() => "success", () => "rejected"),
+        new Promise<string>((resolve) => { guard = setTimeout(() => resolve("hung"), 2_500); }),
+      ]);
+      assert.equal(outcome, "rejected");
+      assert.equal(redirectedHits, 0);
+      await assert.rejects(execute(), /unresolved prior POST/);
+      assert.equal(fetchCalls, 1);
+    } finally {
+      clearTimeout(guard);
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 }
 
 test("GiveGigs target binding freezes worker-visible posting configuration into the exact B1 intent", () => {

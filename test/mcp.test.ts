@@ -212,6 +212,44 @@ const brokenAdapter: CommerceAdapter = {
 
 const ALL: readonly CommerceAdapter[] = [serviceAdapter, workAdapter, brokenAdapter];
 
+test("MCP: option-shaped discovery strings remain data", async () => {
+  const roots = tempRoots();
+  try {
+    await withServer({ env: roots.env, adapters: ALL, log: () => {} }, async (client) => {
+      for (const query of ["--include-unearnable", "--help", "--version", "--"]) {
+        const result = await client.callTool({ name: "commerce_discover_work", arguments: { query } });
+        assert.equal((dataOf(result).query as Record<string, unknown>).q, query);
+      }
+      const result = await client.callTool({
+        name: "commerce_discover_services",
+        arguments: { query: "--help", network: "--version", protocol: "--help" },
+      });
+      assert.deepEqual(dataOf(result).query, { q: "--help", network: "--version", protocol: "--help" });
+      const work = await client.callTool({
+        name: "commerce_discover_work", arguments: { capabilities: ["--help"] },
+      });
+      assert.equal(envelopeOf(work).ok, true);
+    });
+  } finally {
+    roots.cleanup();
+  }
+});
+
+test("MCP: option-shaped targets produce target errors", async () => {
+  const roots = tempRoots();
+  try {
+    await withServer({ env: roots.env, adapters: ALL, log: () => {} }, async (client) => {
+      for (const name of ["commerce_inspect", "commerce_quote", "commerce_prepare_purchase", "commerce_prepare_claim"]) {
+        const result = await client.callTool({ name, arguments: { target: "--version" } });
+        assert.equal(result.isError, true);
+        assert.equal((envelopeOf(result).error as Record<string, unknown>).code, "INVALID_INPUT");
+      }
+    });
+  } finally {
+    roots.cleanup();
+  }
+});
+
 // ------------------------------------------------------------------- harness
 
 interface Roots {

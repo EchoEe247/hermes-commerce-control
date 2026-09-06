@@ -8,6 +8,20 @@ import { parseRetryAfter, verdictForStatus, backoffMs } from "../src/network/ret
 
 const cfg = loadConfig({});
 
+test("safe-fetch: a pre-aborted request never reaches the server", async () => {
+  let hits = 0;
+  await withServer(
+    (_req, res) => { hits += 1; res.end("{}"); },
+    async (base) => {
+      const fetch = createSafeFetch(cfg, { allowLocalBaseUrls: [base], maxRetries: 0 });
+      const controller = new AbortController();
+      controller.abort();
+      await assert.rejects(fetch.json(base, { signal: controller.signal }), /UPSTREAM_TIMEOUT/);
+      assert.equal(hits, 0);
+    },
+  );
+});
+
 /**
  * A loopback test server. Requests to it must be refused by the *public* safe
  * fetch, so it is only reachable through the explicitly-allowlisted variant

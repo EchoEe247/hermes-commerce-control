@@ -29,6 +29,7 @@ import type {
 import { parseServiceCandidate, parseWorkCandidate } from "../core/schemas.js";
 import { EvidenceCollector } from "../evidence/capture.js";
 import { createSafeFetch } from "../network/safe-fetch.js";
+import { withAbortBudget } from "../network/retry.js";
 import type {
   AdapterContext,
   CommerceAdapter,
@@ -116,12 +117,10 @@ export class AdapterRegistry {
           detail: "adapter disabled by configuration",
         };
       }
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.config.network.adapterBudgetMs);
       const started = Date.now();
       try {
-        const ctx = this.contextFor(adapter.id, controller.signal);
-        const probe = await adapter.health(ctx);
+        const probe = await withAbortBudget(this.config.network.adapterBudgetMs,
+          (signal) => adapter.health(this.contextFor(adapter.id, signal)));
         return { ...probe, latencyMs: probe.latencyMs ?? Date.now() - started };
       } catch (error) {
         const typed = asCommerceError(error);
@@ -133,8 +132,6 @@ export class AdapterRegistry {
           detail: typed.message,
           errorCode: typed.code,
         };
-      } finally {
-        clearTimeout(timer);
       }
     });
     return this.runBounded(tasks);
@@ -175,11 +172,9 @@ export class AdapterRegistry {
         };
       }
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.config.network.adapterBudgetMs);
       try {
-        const ctx = this.contextFor(adapter.id, controller.signal);
-        const results = await invoke(adapter, ctx);
+        const results = await withAbortBudget(this.config.network.adapterBudgetMs,
+          (signal) => invoke(adapter, this.contextFor(adapter.id, signal)));
         return {
           platform: adapter.id,
           status: { status: "ok", count: results.length, durationMs: Date.now() - started },
@@ -207,8 +202,6 @@ export class AdapterRegistry {
           },
           results: [],
         };
-      } finally {
-        clearTimeout(timer);
       }
     });
 

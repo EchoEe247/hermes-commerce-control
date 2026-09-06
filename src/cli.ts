@@ -64,6 +64,7 @@ import { findWalletSecretEnvNames, runDoctor } from "./doctor.js";
 import { CommerceRepository } from "./state/repository.js";
 import { closeStateDatabase, openStateDatabase } from "./state/sqlite.js";
 import { currentSchemaVersion, runMigrations } from "./state/migrations.js";
+import { withAbortBudget } from "./network/retry.js";
 
 export const EXIT_OK = 0;
 export const EXIT_ERROR = 1;
@@ -1172,13 +1173,8 @@ export async function runCli(
       platform: PlatformId,
       fn: (context: AdapterContext) => Promise<T>,
     ): Promise<T> => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), config.network.adapterBudgetMs);
-      try {
-        return await fn(registry.contextFor(platform, controller.signal));
-      } finally {
-        clearTimeout(timer);
-      }
+      return withAbortBudget(config.network.adapterBudgetMs,
+        (signal) => fn(registry.contextFor(platform, signal)));
     },
   };
 

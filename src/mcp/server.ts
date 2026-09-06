@@ -64,7 +64,8 @@ interface ToolTextResult {
 /**
  * Runs one CLI command and returns its single JSON document.
  *
- * `--json` is always appended, so the CLI's one-document stdout contract is what
+ * `--json` precedes the arguments, so positional delimiters cannot disable it.
+ * The CLI's one-document stdout contract is what
  * this function parses. Diagnostics are routed to the log sink.
  */
 async function invoke(
@@ -80,7 +81,7 @@ async function invoke(
   let out = "";
   let err = "";
   await runCli(
-    [...argv, "--json"],
+    ["--json", ...argv],
     {
       stdout: (chunk: string): void => {
         out += chunk;
@@ -119,9 +120,9 @@ async function invoke(
   };
 }
 
-/** Appends `--flag value` when the value is present. */
+/** Inline option values cannot be reinterpreted as CLI flags. */
 function flag(name: string, value: string | number | undefined): string[] {
-  return value === undefined ? [] : [`--${name}`, String(value)];
+  return value === undefined ? [] : [`--${name}=${String(value)}`];
 }
 
 const discoverServicesInput = {
@@ -229,11 +230,11 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
       return invoke(deps, [
         "discover",
         "services",
-        ...(input.query === undefined ? [] : [input.query]),
         ...flag("network", input.network),
         ...flag("protocol", input.protocol),
         ...flag("max-usd-price", input.maxUsdPrice),
         ...flag("limit", input.limit),
+        ...(input.query === undefined ? [] : ["--", input.query]),
       ]);
     },
   );
@@ -254,12 +255,12 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
       return invoke(deps, [
         "discover",
         "work",
-        ...(input.query === undefined ? [] : [input.query]),
         ...flag("network", input.network),
         ...flag("min-reward", input.minReward),
         ...flag("limit", input.limit),
-        ...(input.capabilities ?? []).flatMap((capability) => ["--capability", capability]),
+        ...(input.capabilities ?? []).flatMap((capability) => flag("capability", capability)),
         ...(input.includeUnearnable === true ? ["--include-unearnable"] : []),
+        ...(input.query === undefined ? [] : ["--", input.query]),
       ]);
     },
   );
@@ -276,7 +277,7 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
     },
     async (args) => {
       const input = args as { target: string };
-      return invoke(deps, ["inspect", input.target]);
+      return invoke(deps, ["inspect", "--", input.target]);
     },
   );
 
@@ -292,7 +293,7 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
     },
     async (args) => {
       const input = args as { target: string };
-      return invoke(deps, ["quote", input.target]);
+      return invoke(deps, ["quote", "--", input.target]);
     },
   );
 
@@ -310,7 +311,7 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
     },
     async (args) => {
       const input = args as { target: string };
-      return invoke(deps, ["prepare", "purchase", input.target]);
+      return invoke(deps, ["prepare", "purchase", "--", input.target]);
     },
   );
 
@@ -328,7 +329,7 @@ export function createCommerceMcpServer(deps: CommerceMcpDeps = {}): McpServer {
     },
     async (args) => {
       const input = args as { target: string };
-      return invoke(deps, ["prepare", "claim", input.target]);
+      return invoke(deps, ["prepare", "claim", "--", input.target]);
     },
   );
 
