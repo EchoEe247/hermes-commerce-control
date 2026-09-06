@@ -1,6 +1,8 @@
 # Development Guide
 
-This guide is the shortest reliable path from a fresh clone to a pull request that is ready for review.
+This is the shortest reliable path from a fresh clone to a change that is ready for review.
+
+The main thing I want contributors to avoid is an implied PASS: if a relevant command was not run, say that. A focused patch with clear evidence is more useful than a broader change with vague validation.
 
 ## Prerequisites
 
@@ -8,14 +10,14 @@ This guide is the shortest reliable path from a fresh clone to a pull request th
 - npm
 - Git
 
-Check your runtime before installing dependencies:
+Check the runtime first:
 
 ```bash
 node --version
 npm --version
 ```
 
-HCC intentionally targets Node 24. If your Node version is outside the declared engine range, fix that first so failures are not confused with project bugs.
+HCC deliberately targets Node 24. If your runtime is outside the declared engine range, fix that before treating resulting failures as project bugs.
 
 ## Fresh-clone setup
 
@@ -27,7 +29,7 @@ npm run typecheck
 npm run build
 ```
 
-At this point you can run the zero-secret smoke path:
+Then prove the zero-secret baseline:
 
 ```bash
 node dist/launch/cli.js doctor --json
@@ -39,9 +41,9 @@ Normal startup does not require wallet keys, seed phrases, signing authority, ex
 
 ## Test commands
 
-### Full CI-equivalent validation
+### CI-equivalent validation
 
-The repository CI currently runs:
+The repository CI baseline includes:
 
 ```bash
 npm ci
@@ -54,7 +56,7 @@ npm audit --audit-level=moderate
 npm audit --omit=dev --audit-level=moderate
 ```
 
-Use this before requesting review on a substantial change.
+Use the full relevant gate before asking for review on a substantial change.
 
 ### Full test suite
 
@@ -76,7 +78,7 @@ npm run test:serial
 npm run test:contracts
 ```
 
-This runs the configuration, policy, MCP, and adversarial-security contract files. Run it for changes affecting launchers, environment handling, commands/tools, configuration, policy, or safety behavior.
+This covers configuration, policy, MCP, and adversarial-security contracts. Run it for changes touching launchers, environment handling, commands/tools, configuration, policy, or safety behavior.
 
 ### Package-boundary check
 
@@ -84,11 +86,11 @@ This runs the configuration, policy, MCP, and adversarial-security contract file
 npm run test:package
 ```
 
-This validates what would be included in a package archive. Package publication itself is handled separately from contributor work, but contributors should not accidentally expand the release boundary with source/tests/internal files.
+This checks what would be included in the npm package. Contributor work should not accidentally expand the public release surface with source/tests/internal scripts or create a new JavaScript import API.
 
 ## Run one test file
 
-The test suite uses Node's built-in test runner through `tsx`. To focus on a single file while developing:
+The suite uses Node's built-in test runner through `tsx`.
 
 ```bash
 node --import tsx --test test/<name>.test.ts
@@ -110,39 +112,37 @@ node --import tsx --test --test-concurrency=1 test/<name>.test.ts
 
 ## Build output
 
-TypeScript source is under `src/`; compiled output is written to `dist/`.
-
-Rebuild after source changes:
+TypeScript source lives under `src/`; compiled output is generated under `dist/`.
 
 ```bash
 npm run build
 ```
 
-Do not hand-edit `dist/`. Make the change in `src/` and regenerate it through the build.
+Do not hand-edit `dist/`. Change `src/` and rebuild so generated output stays reproducible.
 
 ## Local state and cleanup
 
-Default HCC state lives under:
+Default state root:
 
 ```text
 ~/.hermes/commerce-control/
 ```
 
-The default SQLite database is:
+Default SQLite database:
 
 ```text
 ~/.hermes/commerce-control/state.db
 ```
 
-Most unit tests use isolated fixtures or temporary state. If you are manually exercising the CLI and need a clean user-state baseline, preserve anything you care about before removing local state.
+Most tests use isolated fixtures or temporary state. If you manually exercised the CLI against user state, preserve anything you care about before removing it.
 
-Build artifacts can be removed safely with:
+Build artifacts can be removed with:
 
 ```bash
 rm -rf dist/ node_modules/
 ```
 
-Then restore dependencies/build with:
+Then restore them with:
 
 ```bash
 npm ci
@@ -151,32 +151,30 @@ npm run build
 
 ## Change-specific validation
 
-Use the architecture map in [ARCHITECTURE.md](ARCHITECTURE.md) to find the nearest tests. Minimum expectations:
+Use [`ARCHITECTURE.md`](ARCHITECTURE.md) to identify the owning layer and nearest tests.
 
 ### Adapter changes
 
-Run the adapter's test file plus shared adapter/aggregate tests. Cover, when relevant:
+Run the adapter's focused tests plus relevant shared adapter/aggregate coverage. Include the states that apply:
 
-- normal successful normalization;
+- successful normalization;
 - healthy empty response;
 - malformed upstream payload;
 - timeout/rate-limit/unreachable behavior;
 - capability/actionability declarations;
 - hostile or unsafe URLs.
 
-### CLI changes
+If the adapter uses a third-party SDK, distinguish HCC's caller-time budget from hard cancellation of the SDK's own background work. Only claim cancellation behavior the provider API actually supports.
 
-Run:
+### CLI changes
 
 ```bash
 node --import tsx --test test/cli.test.ts
 ```
 
-If JSON output changes, treat it as a compatibility change and document it.
+If machine-readable JSON output changes, treat that as a compatibility change and document it.
 
 ### MCP changes
-
-Run:
 
 ```bash
 node --import tsx --test test/mcp.test.ts
@@ -187,8 +185,6 @@ Tool names and schemas are public integration contracts.
 
 ### Network/security changes
 
-Run the focused tests plus contracts:
-
 ```bash
 node --import tsx --test test/safe-fetch.test.ts
 node --import tsx --test test/ssrf.test.ts
@@ -197,8 +193,6 @@ npm run test:contracts
 
 ### State/migration changes
 
-Run:
-
 ```bash
 node --import tsx --test test/state.test.ts
 node --import tsx --test test/durability.test.ts
@@ -206,44 +200,48 @@ node --import tsx --test test/durability.test.ts
 
 ### Opportunity subsystem changes
 
-Use the matching `test/opportunity-*.test.ts` file(s). The package scripts named `opportunities:*` expose development/runtime entrypoints for these workflows.
+Use the matching `test/opportunity-*.test.ts` files. The package scripts prefixed with `opportunities:*` expose development/runtime entrypoints for these workflows.
 
 ## Working on an issue
 
-1. Read the issue and linked code/tests before writing code.
-2. Comment on the issue if acceptance criteria are unclear or the change is larger than described.
+1. Read the issue and linked code/tests before writing.
+2. If the acceptance criteria are unclear or the scope is larger than described, discuss that before expanding the change.
 3. Create a focused branch.
 4. Add or update tests with the implementation.
-5. Run the smallest relevant test loop while developing.
-6. Run typecheck/build and the relevant broader suite before opening a PR.
-7. In the PR, list exactly what you ran. If something could not be run, state that explicitly.
+5. Run the smallest useful loop while developing.
+6. Run typecheck/build and the relevant broader gate before opening a PR.
+7. In the PR, list exactly what you ran. If something could not be run, state it explicitly.
 
 ## Pull request scope
 
-Good review units are small enough that a maintainer can understand the behavioral change and its evidence together.
+Good review units keep the behavioral change and evidence together.
 
-Prefer:
+Examples:
 
-- one adapter bug + regression tests;
+- one adapter bug + regression coverage;
 - one documentation gap;
 - one isolated CLI/MCP behavior change;
 - one migration + durability coverage;
 - one deterministic ranking correction.
 
-Avoid mixing formatting churn, renames, dependency changes, and functional changes unless they are inseparable.
+Avoid mixing formatting churn, renames, dependency changes, and functional changes unless they are genuinely inseparable.
 
 ## AI-assisted development
 
-AI assistance is allowed, but the contributor owns the result. Before submitting generated code:
+AI assistance is allowed. The contributor owns the result.
+
+For me, the relevant question is not whether AI generated part of the patch. It is whether the submitted code is understood, real, safe, and validated.
+
+Before submitting AI-assisted code:
 
 - verify referenced APIs exist;
 - understand the changed behavior;
-- remove speculative or duplicated tests;
-- run the claimed validation;
+- remove hallucinated assumptions, speculative abstractions, and duplicated tests;
+- run the validation you claim;
 - check that no secret, token, wallet material, or private fixture entered the diff.
 
 ## Where to start
 
-New contributors should look for issues labeled `good first issue` or `help wanted`. Documentation, focused test coverage, and bounded adapter improvements are generally better first contributions than changes to launch hardening, policy, or MCP public contracts.
+Look for `good first issue` or `help wanted` labels. Documentation, focused regression coverage, and bounded adapter improvements are generally better first contributions than changes to launch hardening, policy, or the MCP public contract.
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for project policy and [ARCHITECTURE.md](ARCHITECTURE.md) for code ownership.
+See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for project policy and [`ARCHITECTURE.md`](ARCHITECTURE.md) for code ownership.

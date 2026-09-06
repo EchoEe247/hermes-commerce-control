@@ -1,26 +1,28 @@
 # Contributing to Hermes Commerce Control
 
-Thanks for contributing. HCC is a security-sensitive local control plane, so changes are reviewed for correctness, bounded behavior, and preservation of the Mode-A safety boundary.
+Contributions are welcome. HCC is a security-sensitive local control plane, so I want outside changes to be easy to contribute without making the review standard vague.
+
+A correct community patch does not need to be recreated by a maintainer. It does need clear evidence, bounded scope, and preservation of the Mode-A safety contract.
 
 ## New contributor path
 
 If this is your first HCC contribution:
 
-1. Read the [zero-secret quickstart](docs/QUICKSTART.md) and confirm you can build/run the project without wallet or signing credentials.
-2. Read the [architecture map](docs/ARCHITECTURE.md) to identify the code and nearest tests for your change.
-3. Use the [development guide](docs/DEVELOPMENT.md) for the fresh-clone, focused-test, and CI-equivalent commands.
-4. Look for issues labeled `good first issue` or `help wanted`, or file a reproducible bug/feature request using the issue forms.
-5. Keep the first PR focused. Documentation fixes, regression tests, fixture coverage, and bounded adapter corrections are strong starting points.
+1. Read the [zero-secret quickstart](docs/QUICKSTART.md) and confirm the project builds/runs without wallet or signing credentials.
+2. Read the [architecture map](docs/ARCHITECTURE.md) so you know which layer owns the behavior and which tests are closest to it.
+3. Use the [development guide](docs/DEVELOPMENT.md) for fresh-clone setup, focused tests, and CI-equivalent validation.
+4. Look for `good first issue` or `help wanted`, or file a reproducible bug/feature request.
+5. Keep the first PR focused. Documentation, regression tests, fixture coverage, and bounded adapter fixes are useful contributions without requiring the entire architecture in your head.
 
-The public [roadmap](ROADMAP.md) explains current project direction and non-goals.
+The [roadmap](ROADMAP.md) explains the current direction and the boundaries I am not trying to cross by accident.
 
 ## Before opening a pull request
 
-For bugs, small fixes, tests, and documentation corrections, a direct pull request is fine when the change is narrow and well-supported.
+For narrow bugs, tests, or documentation corrections, a direct PR is fine when the problem and evidence are clear.
 
-For larger features, new adapters, protocol changes, new public commands/tools, persistent-state changes, or changes to security policy, open an issue first so the behavior and scope can be agreed before implementation.
+For larger features, new adapters, protocol/public-command changes, persistent-state changes, or security-boundary changes, open an issue first so the intended behavior can be discussed before implementation spreads across the repository.
 
-Please do not open generated issue spam, duplicate reports, speculative vulnerability claims, or low-information pull requests.
+Please do not create generated issue spam, duplicate reports, speculative vulnerability claims, or low-information PRs.
 
 ## Development setup
 
@@ -40,36 +42,36 @@ npm run test:contracts
 npm run test:package
 ```
 
-For constrained hosts such as Android/Termux, the repository also provides:
+For constrained hosts such as Android/Termux:
 
 ```bash
 npm run test:serial
 ```
 
-The CI-equivalent validation sequence, focused single-test commands, state cleanup, and change-specific test guidance are documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Use [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the CI-equivalent sequence, focused tests, state cleanup, and change-specific guidance.
 
-A contribution should not be considered ready if relevant tests have not been run. If a test cannot be run in your environment, say so explicitly in the pull request instead of claiming it passed.
+A contribution is not ready just because the implementation looks correct. Run the relevant gates. If something cannot be run in your environment, say that explicitly instead of turning it into an implied PASS.
 
 ## Security invariants
 
-Unless a separately reviewed project decision changes them, contributions must preserve these invariants:
+Unless a separately reviewed product decision changes them, contributions preserve these boundaries:
 
 - `COMMERCE_MODE=A` is forced by the hardened launchers.
 - General external writes remain disabled.
 - Live value movement remains disabled.
-- Wallet/signing authority is removed before application code is imported.
-- The MCP server exposes no live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish tool.
+- Wallet/signing authority is removed before application code imports.
+- MCP exposes no live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish tool.
 - Preparation actions remain reviewable and non-executing.
-- Adapter failures remain isolated and bounded.
-- Untrusted network/content inputs remain subject to schema validation, sanitization, and SSRF protections.
+- Adapter failures remain isolated and bounded from the caller's perspective.
+- Untrusted network/content inputs remain behind schema validation, sanitization, and SSRF protections.
 
-A pull request that intentionally changes one of these boundaries must explain the threat model, migration path, and validation evidence in detail and should be discussed in an issue first.
+A PR that intentionally changes one of these is not an ordinary refactor. Explain the threat model, migration path, and validation evidence and discuss the decision first.
 
 ## Adding or changing an adapter
 
-Start with `src/adapters/interface.ts`, `src/adapters/registry.ts`, the nearest existing adapter, and the adapter section of [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Start with `src/adapters/interface.ts`, `src/adapters/registry.ts`, the nearest existing adapter, and the adapter section of [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Adapter work should include tests for relevant cases such as:
+Cover the relevant cases:
 
 - successful normalization;
 - empty-but-healthy results;
@@ -79,42 +81,44 @@ Adapter work should include tests for relevant cases such as:
 - actionability flags;
 - schema validation;
 - secret/wallet isolation;
-- SSRF or hostile URL behavior when network endpoints are involved.
+- SSRF or hostile URL behavior where network endpoints are involved.
 
-Do not add credentials, private keys, seed phrases, wallet signing material, live payment authority, or real production secrets to fixtures.
+HCC bounds the caller wait with adapter budgets and aborts HCC-owned network resources. Do not claim hard cancellation of third-party SDK work unless that SDK exposes a real cancellation primitive and the implementation proves it.
+
+Never add private keys, seed phrases, signing material, live payment authority, or production secrets to fixtures.
 
 ## MCP contributions
 
-The MCP server is a public integration surface. Tool names and schemas should be treated as compatibility contracts.
+The MCP server is a public integration contract. Tool names and schemas should not drift casually.
 
-Before changing MCP behavior, read [docs/MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) and run:
+Before changing MCP behavior, read [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) and run:
 
 ```bash
 node --import tsx --test test/mcp.test.ts
 npm run test:contracts
 ```
 
-If a tool name/schema intentionally changes, update the README/integration documentation and call the compatibility impact out in the pull request.
+If a tool name or schema intentionally changes, update the README/integration docs and make the compatibility impact explicit in the PR.
 
 ## AI-assisted contributions
 
-AI-assisted development is welcome. The contributor remains responsible for the submitted change.
+AI-assisted development is welcome. The contributor still owns the submitted result.
 
-Please verify generated code and tests, remove hallucinated APIs or assumptions, and ensure the pull request describes what was actually validated. Large mechanically generated changes, duplicated tests, synthetic issue volume, or code that has not been understood by the submitter may be closed without merge.
+The rule I care about is not whether AI was used; it is whether the code and evidence are real. Verify referenced APIs, understand the behavior, remove hallucinated assumptions or duplicated tests, run what the PR claims was run, and make sure no secret/private fixture entered the diff.
+
+Large mechanically generated changes that the submitter cannot explain are not useful simply because they contain a lot of code.
 
 ## Pull request quality
 
-A strong pull request includes:
+A strong PR includes:
 
 - a focused problem statement;
 - the smallest coherent implementation that solves it;
 - tests or concrete validation evidence;
-- any compatibility or security implications;
+- compatibility/security implications when relevant;
 - no unrelated formatting or generated-file churn.
 
-The repository PR template asks for these items explicitly.
-
-Keep commits understandable. Conventional-style commit subjects are preferred when practical, for example:
+Conventional-style subjects are preferred when practical, for example:
 
 ```text
 fix(adapters): bound provider timeout handling
@@ -124,8 +128,8 @@ test(security): cover hostile redirect target
 
 ## Reporting security issues
 
-Read [SECURITY.md](SECURITY.md) before reporting a vulnerability. Never put real secrets, signing material, or payment credentials into a public issue.
+Read [`SECURITY.md`](SECURITY.md) before reporting a vulnerability. Never put real secrets, signing material, or payment credentials into a public issue.
 
 ## Licensing
 
-By submitting a contribution for inclusion in this repository, you agree that your contribution is provided under the repository's Apache License 2.0, unless you explicitly mark material as not a contribution or identify third-party material and its applicable license.
+By submitting a contribution for inclusion here, you agree that the contribution is provided under the repository's Apache License 2.0 unless you explicitly identify material that is not your contribution or has another applicable license.

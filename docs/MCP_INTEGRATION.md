@@ -1,8 +1,8 @@
 # MCP Integration Walkthrough
 
-This walkthrough shows how to run Hermes Commerce Control as a local stdio MCP server from a fresh clone without providing wallet or signing secrets.
+This walkthrough proves the HCC MCP boundary from a fresh source checkout without wallet or signing secrets.
 
-It is intended for external users and contributors who want to verify the integration boundary before changing code.
+The setup is deliberately ordinary: build HCC, point an MCP client at the real Node executable and HCC's stdio entrypoint, and verify the exact preparation-only tool surface. There is no separate HCC network service to deploy for this path.
 
 ## 1. Clone and build
 
@@ -29,13 +29,13 @@ From the repository root:
 node dist/launch/mcp.js
 ```
 
-The process communicates over stdin/stdout using MCP. It is not an HTTP server and does not need a listening port.
+The process communicates over stdin/stdout using MCP. It is **not** an HTTP server and does not need a listening port.
 
-Do not wrap it in a shell that prints banners or other text to stdout; extra stdout can corrupt stdio protocol traffic.
+Keep stdout clean. Do not wrap the process in shell startup banners or debug `echo` output because extra stdout can corrupt stdio protocol traffic.
 
 ## 3. Generic MCP client configuration
 
-MCP clients use different configuration file locations, but the process definition is the same. Point the client at your real Node executable and the absolute path to the built HCC entrypoint.
+Client configuration locations differ, but the process definition is the same: point the client at the real Node executable and the absolute path to the built HCC entrypoint.
 
 Conceptually:
 
@@ -48,13 +48,13 @@ Conceptually:
 }
 ```
 
-Find the Node executable with:
+Find Node with:
 
 ```bash
 command -v node
 ```
 
-Find the entrypoint path from the repository root with:
+Find the repository root with:
 
 ```bash
 pwd
@@ -62,11 +62,11 @@ pwd
 
 Then append `/dist/launch/mcp.js`.
 
-HCC does not require wallet/signing environment variables for normal MCP startup. Do not add private keys, seed phrases, NWC credentials, or payment authorization to the client configuration.
+Normal MCP startup does not require wallet/signing environment variables. Do not add private keys, seed phrases, NWC credentials, or payment authorization to the client configuration.
 
 ## 4. Hermes registration
 
-If you use Hermes, register the direct Node entrypoint:
+For Hermes, register the direct Node entrypoint:
 
 ```bash
 NODE_REAL="$(command -v node)"
@@ -77,13 +77,13 @@ hermes mcp add commerce-control \
   --args "$MCP_JS"
 ```
 
-The repository also includes an installer:
+The source repository also includes an installer:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh
 ```
 
-To validate the installer without changing an existing Hermes registration:
+Validate that installer without changing an existing Hermes registration:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh --skip-register
@@ -91,7 +91,7 @@ bash scripts/install-hermes-commerce-control.sh --skip-register
 
 ## 5. Expected tool surface
 
-The server exposes these 11 canonical tools:
+The server exposes exactly these 11 canonical tools:
 
 1. `commerce_status`
 2. `commerce_sources`
@@ -107,25 +107,25 @@ The server exposes these 11 canonical tools:
 
 There is intentionally no live payment, settlement, transfer, withdrawal, claim-execution, funding, or production-publish tool.
 
-If an integration reports a different tool set, check that the client is starting the expected checkout/build and not a stale copy.
+If your client shows a different set, first verify that it is starting the expected checkout/build rather than a stale HCC copy.
 
 ## 6. First useful calls
 
 Start with read-oriented tools:
 
-- `commerce_status` — inspect runtime posture/state;
-- `commerce_sources` — inspect registered sources/capabilities;
-- `commerce_probe` — check bounded upstream reachability;
+- `commerce_status` — runtime posture/state;
+- `commerce_sources` — registered sources/capabilities;
+- `commerce_probe` — bounded upstream reachability;
 - `commerce_discover_services` — aggregate service discovery;
 - `commerce_discover_work` — aggregate work discovery.
 
-Upstream services can be unavailable or rate-limited. HCC is designed to report a degraded/unreachable source without crashing the whole aggregate operation.
+Individual upstreams can be offline, malformed, timed out, or rate-limited. HCC is designed to return a degraded/unreachable source instead of turning one provider failure into failure of the whole aggregate operation.
 
 ## 7. Workspace-backed operations
 
-Some inspection/export behavior uses a local workspace. The default workspace is the current working directory of the MCP process.
+Some inspection/export behavior uses a local workspace. By default, that is the MCP process's current working directory.
 
-To pin a workspace, set only the ordinary path configuration needed by HCC:
+To pin another workspace, set the ordinary path configuration HCC needs:
 
 ```json
 {
@@ -139,7 +139,7 @@ To pin a workspace, set only the ordinary path configuration needed by HCC:
 }
 ```
 
-`COMMERCE_REPO_ROOT` is a filesystem path, not a credential.
+`COMMERCE_REPO_ROOT` is a filesystem path, not a credential source.
 
 ## 8. Troubleshooting
 
@@ -153,15 +153,17 @@ npm run build
 ls -l dist/launch/mcp.js
 ```
 
-Then verify the client uses absolute paths and the same Node installation that satisfies the repository engine requirement.
+Then verify the client uses absolute paths and the same Node installation that satisfies HCC's engine requirement.
 
 ### Protocol parse errors
 
-Run the MCP server without shell startup banners or debug `echo` output on stdout. Protocol diagnostics should not be mixed into stdout.
+Run the MCP server without shell banners or debug output on stdout. Keep protocol traffic and diagnostics separated.
 
 ### Discovery reports unreachable sources
 
-That can be a valid upstream state. Reproduce the corresponding CLI command to separate client configuration from adapter/network behavior:
+That can be a truthful upstream state rather than an MCP configuration failure.
+
+Reproduce through the CLI:
 
 ```bash
 node dist/launch/cli.js probe
@@ -169,13 +171,17 @@ node dist/launch/cli.js discover services --json
 node dist/launch/cli.js discover work --json
 ```
 
+HCC bounds how long the caller waits for each adapter. For HCC-owned `SafeFetch` operations, timeout also aborts the underlying network resource. A third-party SDK that exposes no cancellation primitive may continue its own background task after HCC has already returned `UPSTREAM_TIMEOUT`; see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
 ### A basic setup appears to require a wallet secret
 
-Stop. Normal HCC startup and read/preparation workflows are designed to be zero-secret. Open a security or documentation report with the exact command/client configuration and observed error; do not paste real secrets.
+Stop. Normal HCC startup and read/preparation workflows are designed to be zero-secret.
+
+Report the exact command/client configuration and observed error without pasting a real secret. Supplying financial authority just to make the quickstart pass would hide the problem rather than solve it.
 
 ## 9. Contributor verification
 
-If your pull request changes MCP behavior, run at minimum:
+If a PR changes MCP behavior, run at minimum:
 
 ```bash
 npm run typecheck
@@ -184,4 +190,4 @@ node --import tsx --test test/mcp.test.ts
 npm run test:contracts
 ```
 
-Tool-name or schema changes are compatibility changes. Explain them explicitly in the pull request and update the README/integration docs at the same time.
+Tool names and schemas are compatibility contracts. If one intentionally changes, explain the impact in the PR and update README/integration documentation in the same change.

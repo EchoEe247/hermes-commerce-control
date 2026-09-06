@@ -1,21 +1,27 @@
 # Hermes Commerce Control
 
-Hermes Commerce Control (HCC) is a local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
+Hermes Commerce Control (HCC) is my local-first Node.js 24 CLI and Model Context Protocol (MCP) server for agent-commerce discovery, ranking, evidence capture, and **preparation-only** workflows.
 
-The project is a standalone Apache-2.0-licensed repository. The canonical npm release is **`hermes-commerce-control@0.1.2`**. Published releases are immutable; future package or registry changes use a new SemVer release and the same clean-install/package/runtime validation gates.
+The project is public Apache-2.0 OSS. The canonical release is **`hermes-commerce-control@0.1.2`**.
 
-## What HCC does
+The main boundary is intentional: I want HCC to help an agent discover opportunities, inspect them, rank them, collect evidence, and prepare actions without quietly turning that preparation layer into a wallet or live-value execution system.
 
-HCC provides two hardened process entrypoints:
+So HCC does **not** expose live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish capability.
+
+## What HCC provides
+
+HCC has two hardened process entrypoints:
 
 - `commerce` → `dist/launch/cli.js`
 - `commerce-mcp` → `dist/launch/mcp.js`
 
-It coordinates bounded adapters for machine-commerce services and work opportunities, persists local state in SQLite, normalizes and ranks results, captures evidence, and prepares reviewable action intents.
+Behind those entrypoints it coordinates bounded adapters for machine-commerce services and work opportunities, persists local state in SQLite, normalizes and ranks results, captures reviewable evidence, and prepares action intents for operator review.
 
-It intentionally does **not** expose live pay, purchase, claim, settlement, transfer, withdrawal, funding, or production-publish capability.
+Published releases are immutable. If the package, public contract, or Registry compatibility needs to change, ship a new SemVer release and rerun the clean-install/package/runtime gates instead of changing an existing version in place.
 
 ## Mode-A safety boundary
+
+For me, this is not an optional runtime preference. It is the default product contract.
 
 Both launchers harden the environment **before** importing application code. They:
 
@@ -25,35 +31,37 @@ Both launchers harden the environment **before** importing application code. The
 - force `LIVE_VALUE_MOVEMENT_ENABLED=false`;
 - preserve ordinary non-wallet configuration, including an explicitly configured `COMMERCE_REPO_ROOT`.
 
-The doctor command independently reports the effective security posture. Wallet values are not copied into diagnostic output.
+The doctor command independently reports the effective security posture without copying wallet values into diagnostic output.
+
+If basic startup appears to require a wallet secret, that is a problem to investigate rather than a missing setup step.
 
 ## Requirements
 
 - Node.js `>=24.15.0 <25`
 - npm
 
-For the npm package contract, install paths, SemVer policy, current publication state, and release gate, see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+For the npm contract, current publication state, SemVer policy, Registry boundary, and release gate, see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
 
 ## Start here
 
-**Trying HCC:** follow the [zero-secret quickstart](docs/QUICKSTART.md).
+**Trying HCC:** use the [zero-secret quickstart](docs/QUICKSTART.md).
 
 **Connecting an MCP client:** use the [MCP integration walkthrough](docs/MCP_INTEGRATION.md).
 
-**Contributing:** read [CONTRIBUTING.md](CONTRIBUTING.md), then use the [development guide](docs/DEVELOPMENT.md) and [architecture map](docs/ARCHITECTURE.md). The [roadmap](ROADMAP.md) describes current direction and non-goals.
+**Contributing:** read [CONTRIBUTING.md](CONTRIBUTING.md), then use the [development guide](docs/DEVELOPMENT.md) and [architecture map](docs/ARCHITECTURE.md). The [roadmap](ROADMAP.md) describes where I want the project to go and what is deliberately outside that direction.
 
 New contributors can look for issues labeled [`good first issue`](https://github.com/EchoEe247/hermes-commerce-control/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) and [`help wanted`](https://github.com/EchoEe247/hermes-commerce-control/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22).
 
 ## Good first contributions
 
-The following issues are intentionally scoped so an outside contributor can make a useful change without learning the entire codebase first:
+The contributor path should not require learning the whole codebase before making something useful. Current scoped examples include:
 
-- [#5 — Add a checked-in generic stdio MCP client example](https://github.com/EchoEe247/hermes-commerce-control/issues/5): small integration/documentation task with a portable example and validation.
-- [#8 — Add a docs contract check for the canonical MCP tool list](https://github.com/EchoEe247/hermes-commerce-control/issues/8): bounded code/test task that prevents the public 11-tool documentation from drifting from the implementation contract.
-- [#4 — Document the local opportunity workflow end to end](https://github.com/EchoEe247/hermes-commerce-control/issues/4): documentation task grounded in the existing opportunity scripts and tests.
-- [#7 — Add an adapter authoring and fixture guide](https://github.com/EchoEe247/hermes-commerce-control/issues/7): deeper documentation task for contributors interested in adapters, hardened fetching, and test fixtures.
+- [#5 — Add a checked-in generic stdio MCP client example](https://github.com/EchoEe247/hermes-commerce-control/issues/5): portable integration/documentation work with concrete validation.
+- [#8 — Add a docs contract check for the canonical MCP tool list](https://github.com/EchoEe247/hermes-commerce-control/issues/8): a bounded code/test task that prevents the public 11-tool documentation from drifting from implementation.
+- [#4 — Document the local opportunity workflow end to end](https://github.com/EchoEe247/hermes-commerce-control/issues/4): documentation grounded in existing opportunity scripts and tests.
+- [#7 — Add an adapter authoring and fixture guide](https://github.com/EchoEe247/hermes-commerce-control/issues/7): deeper contributor documentation around adapters, hardened fetching, and fixtures.
 
-Each issue includes acceptance criteria and concrete starting files. Contributions should preserve the Mode-A safety boundary and include the focused validation described in [the development guide](docs/DEVELOPMENT.md).
+Each issue has acceptance criteria and starting files. Contributions should preserve the Mode-A boundary and run the focused validation described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Build and validate
 
@@ -74,7 +82,7 @@ For constrained hosts such as Android/Termux:
 npm run test:serial
 ```
 
-`test:package` verifies the compiled-only npm boundary and public executable contract. `test:registry` verifies that the live npm package name belongs to this repository. `test:install` packs the real artifact, installs it into a blank consumer project, and exercises both the hardened CLI and MCP entrypoints.
+`test:package` checks the compiled-only npm boundary and executable contract. `test:registry` verifies that the live npm package name belongs to this repository. `test:install` packs the real artifact, installs it into a blank consumer project, and exercises both hardened entrypoints.
 
 ## Install from npm
 
@@ -85,7 +93,7 @@ commerce status --json
 commerce sources --json
 ```
 
-A project-local installation can use:
+Project-local installation:
 
 ```bash
 npm install hermes-commerce-control
@@ -94,7 +102,7 @@ npm exec -- commerce doctor --json
 
 The canonical public version is currently **0.1.2**.
 
-## Zero-secret quickstart
+## Zero-secret source quickstart
 
 No wallet key, seed phrase, signer, exchange credential, or payment authorization is needed for normal startup.
 
@@ -114,7 +122,7 @@ node dist/launch/cli.js discover services --json
 node dist/launch/cli.js discover work --json
 ```
 
-See [`docs/QUICKSTART.md`](docs/QUICKSTART.md) for the complete zero-secret path.
+See [`docs/QUICKSTART.md`](docs/QUICKSTART.md) for the complete path.
 
 ## Runtime and state
 
@@ -126,14 +134,12 @@ Portable defaults:
 
 `COMMERCE_REPO_ROOT` is optional. When supplied, it selects the local workspace used for product inspection and evidence export.
 
-Example:
-
 ```bash
 COMMERCE_REPO_ROOT=/absolute/path/to/workspace \
   node dist/launch/cli.js export
 ```
 
-## CLI commands
+## CLI contract
 
 The canonical CLI surface is:
 
@@ -152,7 +158,7 @@ The canonical CLI surface is:
 
 `--json` keeps stdout machine-readable and sends diagnostics to stderr.
 
-## MCP surface
+## MCP contract
 
 The stdio MCP server exposes exactly 11 canonical tools:
 
@@ -168,7 +174,7 @@ The stdio MCP server exposes exactly 11 canonical tools:
 10. `commerce_probe`
 11. `commerce_export_evidence`
 
-No live-action sibling is part of the exposed tool set.
+There is no live-action sibling tool hidden beside that list.
 
 Start the server directly:
 
@@ -188,11 +194,13 @@ HCC currently coordinates seven bounded sources:
 - the402
 - Pay.sh / pay-skills
 
-Network failures are isolated per source. Timeouts, rate limits, malformed responses, and upstream outages are represented as typed degraded/unreachable outcomes rather than crashing aggregate discovery.
+Network failures are isolated per source. Timeouts, rate limits, malformed responses, and upstream outages become typed degraded/unreachable outcomes instead of crashing aggregate discovery.
+
+One important boundary: HCC can strictly bound how long the caller waits for an adapter and can abort HCC-owned network resources. It cannot claim hard process-level cancellation of arbitrary third-party SDK work when the provider does not expose a cancellation primitive. The current PipRail SDK is an example of that limitation. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Hermes integration
 
-The repository installer is a source-checkout helper and is intentionally not part of the prebuilt npm tarball.
+The repository installer is a source-checkout helper and is intentionally outside the prebuilt npm tarball.
 
 Validate/build wrappers without changing Hermes registration:
 
@@ -206,14 +214,14 @@ Full source-checkout installer path:
 bash scripts/install-hermes-commerce-control.sh
 ```
 
-Pin a workspace explicitly when desired:
+Pin a workspace explicitly when needed:
 
 ```bash
 bash scripts/install-hermes-commerce-control.sh \
   --workspace /absolute/path/to/workspace
 ```
 
-For environments where shell-wrapper execution is unreliable, register the direct Node entrypoint:
+Where shell-wrapper execution is unreliable, register the direct Node entrypoint:
 
 ```bash
 NODE_REAL="$(command -v node)"
@@ -224,9 +232,9 @@ hermes mcp add commerce-control \
   --args "$MCP_JS"
 ```
 
-After an npm global install, MCP hosts can use the installed `commerce-mcp` executable directly; see [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+After a global npm install, MCP hosts can use `commerce-mcp` directly. See [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
 
-On native Termux this direct Node registration was validated against Hermes v0.20.0 and discovered all 11 tools.
+On native Termux, direct Node registration was validated against Hermes v0.20.0 and discovered all 11 tools.
 
 ## Validated release history
 
@@ -245,24 +253,26 @@ Before the OSS metadata gate, the standalone extraction passed:
 
 Release history:
 
-- `v0.1.0` — source-only initial release; npm publication was intentionally deferred.
+- `v0.1.0` — source-only initial release; npm publication intentionally deferred.
 - `v0.1.1` — first public npm release.
-- `v0.1.2` — current canonical patch release; corrected runtime/package version drift and added a clean-consumer regression gate.
+- `v0.1.2` — current canonical patch release; fixed runtime/package version drift and added the clean-consumer regression gate.
 
-The Official MCP Registry is a separate distribution surface. Published `0.1.2` does not contain the current Registry-required npm `mcpName`, so it is not registered as-is. A validated 0.1.3 Registry-compatibility candidate may be resumed through a future reviewed/authenticated release path; until that release actually succeeds, **0.1.2 remains canonical**.
+The Official MCP Registry is a separate distribution surface. Published `0.1.2` does not contain the Registry-required npm `mcpName`, so it is not registered as-is.
 
-## Project and contribution docs
+A validated `0.1.3` Registry-compatibility candidate exists as dormant/recoverable work, but it is not public and does not replace the canonical release. Until a reviewed release actually succeeds, **0.1.2 remains canonical**.
+
+## Documentation map
 
 - [`docs/QUICKSTART.md`](docs/QUICKSTART.md) — fresh-clone zero-secret run path.
 - [`docs/MCP_INTEGRATION.md`](docs/MCP_INTEGRATION.md) — generic stdio MCP + Hermes walkthrough.
-- [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) — npm install/release contract and adoption measurement.
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — focused development/test loop and CI-equivalent commands.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — contributor-oriented module/data-flow map.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow, security invariants, and AI-assisted contribution policy.
-- [`ROADMAP.md`](ROADMAP.md) — current project direction and explicit non-goals.
-- [`SECURITY.md`](SECURITY.md) — vulnerability-reporting policy and security-sensitive scope.
+- [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) — npm release/install contract, Registry state, and adoption measurement.
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — development/test loop and CI-equivalent commands.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module/data-flow map and architectural boundaries.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contributor workflow, security invariants, and AI-assisted contribution policy.
+- [`ROADMAP.md`](ROADMAP.md) — project direction and explicit non-goals.
+- [`SECURITY.md`](SECURITY.md) — vulnerability-reporting policy and sensitive surfaces.
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — participation standards.
-- [`CHANGELOG.md`](CHANGELOG.md) — release notes.
+- [`CHANGELOG.md`](CHANGELOG.md) — immutable release notes/history.
 
 ## License
 
