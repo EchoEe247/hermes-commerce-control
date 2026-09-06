@@ -208,6 +208,9 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
     init: RequestInit2,
     deadline: number,
   ): Promise<{ status: number; headers: Record<string, string>; text: string; bytes: number; location: string | null; finalUrl: string }> {
+    if (init.signal?.aborted === true) {
+      throw new CommerceError("UPSTREAM_TIMEOUT", "request cancelled before transport");
+    }
     const { url, isAllowlistedLocal } = validate(target);
 
     // Defence in depth: if the host is already a literal, check it here too.
@@ -309,6 +312,8 @@ export function createSafeFetch(config: CommerceConfig, options: SafeFetchOption
       try {
         result = await once(current, init, deadline);
       } catch (error) {
+        // Cancellation is terminal, including when it happens during a request.
+        if (init.signal?.aborted === true) throw error;
         // SSRF and size failures are terminal, never retried.
         if (
           error instanceof CommerceError &&

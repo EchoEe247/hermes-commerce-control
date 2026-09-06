@@ -2,7 +2,7 @@ import type { CommerceConfig } from "../config.js";
 import { canonicalHash } from "../core/ids.js";
 import { evaluatePolicy } from "../policy/engine.js";
 import type { PolicyDecision } from "../policy/decisions.js";
-import type { HumanRecruitmentPayload } from "./human-recruitment-adapters.js";
+import { assertHumanRecruitmentPayloadIntegrity, type HumanRecruitmentPayload } from "./human-recruitment-adapters.js";
 
 export interface HumanRecruitmentActionIntent {
   readonly schemaVersion: 1;
@@ -55,6 +55,7 @@ export function createHumanRecruitmentActionIntent(
   payload: HumanRecruitmentPayload,
   clock: () => string = (): string => new Date().toISOString(),
 ): HumanRecruitmentActionIntent {
+  assertHumanRecruitmentPayloadIntegrity(payload);
   if (payload.boundary.externalActionsAllowed !== false) {
     throw new Error("human recruitment payload must remain preparation-only");
   }

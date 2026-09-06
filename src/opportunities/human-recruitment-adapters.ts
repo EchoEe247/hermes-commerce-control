@@ -68,7 +68,12 @@ function taskLabel(kind: "remote" | "physical"): string {
   return kind === "physical" ? "Paid local/physical task" : "Paid remote task";
 }
 
-function linesForTerms(contract: HumanFulfillmentContractDraft): readonly string[] {
+type WorkerRenderingInput = {
+  readonly kind: HumanFulfillmentContractDraft["kind"];
+  readonly terms: Omit<HumanFulfillmentContractDraft["terms"], "workerReference">;
+};
+
+function linesForTerms(contract: WorkerRenderingInput): readonly string[] {
   const terms = contract.terms;
   const lines = [
     `Scope: ${terms.taskBrief}`,
@@ -84,7 +89,7 @@ function linesForTerms(contract: HumanFulfillmentContractDraft): readonly string
   return Object.freeze(lines);
 }
 
-function renderReddit(contract: HumanFulfillmentContractDraft): HumanRecruitmentPayload["rendered"] {
+function renderReddit(contract: WorkerRenderingInput): HumanRecruitmentPayload["rendered"] {
   const title = boundedText(
     "reddit title",
     `[HIRING] ${taskLabel(contract.kind)} — ${money(contract.terms.fullCompensationUsd)}`,
@@ -96,7 +101,7 @@ function renderReddit(contract: HumanFulfillmentContractDraft): HumanRecruitment
   });
 }
 
-function renderMarketplace(contract: HumanFulfillmentContractDraft): HumanRecruitmentPayload["rendered"] {
+function renderMarketplace(contract: WorkerRenderingInput): HumanRecruitmentPayload["rendered"] {
   return Object.freeze({
     title: boundedText(
       "marketplace title",
@@ -107,7 +112,7 @@ function renderMarketplace(contract: HumanFulfillmentContractDraft): HumanRecrui
   });
 }
 
-function renderDirect(contract: HumanFulfillmentContractDraft): HumanRecruitmentPayload["rendered"] {
+function renderDirect(contract: WorkerRenderingInput): HumanRecruitmentPayload["rendered"] {
   return Object.freeze({
     title: boundedText("direct subject", taskLabel(contract.kind), 300),
     body: [
@@ -118,7 +123,7 @@ function renderDirect(contract: HumanFulfillmentContractDraft): HumanRecruitment
   });
 }
 
-function renderOther(contract: HumanFulfillmentContractDraft): HumanRecruitmentPayload["rendered"] {
+function renderOther(contract: WorkerRenderingInput): HumanRecruitmentPayload["rendered"] {
   return Object.freeze({
     title: boundedText("custom title", `${taskLabel(contract.kind)} — ${money(contract.terms.fullCompensationUsd)}`, 300),
     body: linesForTerms(contract).join("\n"),
@@ -127,7 +132,7 @@ function renderOther(contract: HumanFulfillmentContractDraft): HumanRecruitmentP
 
 function renderForChannel(
   channel: HumanRecruitmentChannel,
-  contract: HumanFulfillmentContractDraft,
+  contract: WorkerRenderingInput,
 ): HumanRecruitmentPayload["rendered"] {
   switch (channel) {
     case "reddit":
@@ -201,4 +206,41 @@ export function buildHumanRecruitmentPayload(
       compensationExecutionAllowed: false as const,
     }),
   });
+}
+
+/** Verify persisted preparation data before it can authorize an external write. */
+export function assertHumanRecruitmentPayloadIntegrity(payload: HumanRecruitmentPayload): void {
+  if (payload.schemaVersion !== 1 ||
+      !(HUMAN_RECRUITMENT_CHANNELS as readonly string[]).includes(payload.channel) ||
+      !(HUMAN_RECRUITMENT_DELIVERY_KINDS as readonly string[]).includes(payload.delivery) ||
+      !["remote", "physical"].includes(payload.workerTerms.kind) ||
+      (payload.channel === "direct" && payload.delivery !== "private_message") ||
+      payload.boundary.externalActionsAllowed !== false ||
+      payload.boundary.preparedContentOnly !== true ||
+      payload.boundary.compensationExecutionAllowed !== false) {
+    throw new Error("human recruitment payload integrity check failed");
+  }
+  // Keep the existing 0.x identity algorithm. Its rendered terms must also
+  // agree with the structured terms used by provider transports.
+  for (const amount of [payload.workerTerms.fullCompensationUsd, payload.workerTerms.goodFaithAttemptCompensationUsd]) {
+    if (!Number.isFinite(amount) || Number(amount.toFixed(2)) !== amount) {
+      throw new Error("human recruitment compensation integrity does not match rendered cents");
+    }
+  }
+  const rendered = renderForChannel(payload.channel, {
+    kind: payload.workerTerms.kind,
+    terms: payload.workerTerms,
+  });
+  const expectedId = `hpayload_${canonicalHash({
+    schemaVersion: 1,
+    contractId: payload.contractId,
+    channel: payload.channel,
+    target: payload.target,
+    delivery: payload.delivery,
+    rulesVerifiedAt: payload.rulesVerifiedAt,
+    rendered,
+  }).slice(0, 32)}`;
+  if (payload.payloadId !== expectedId || canonicalHash(payload.rendered) !== canonicalHash(rendered)) {
+    throw new Error("human recruitment payload integrity does not match prepared content");
+  }
 }

@@ -2,7 +2,7 @@ import type { CommerceConfig } from "../config.js";
 import { canonicalHash } from "../core/ids.js";
 import { evaluatePolicy } from "../policy/engine.js";
 import type { HumanRecruitmentPayload } from "./human-recruitment-adapters.js";
-import type { HumanRecruitmentActionIntent } from "./human-recruitment-intent.js";
+import { createHumanRecruitmentActionIntent, type HumanRecruitmentActionIntent } from "./human-recruitment-intent.js";
 
 const MAX_RULE_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
@@ -105,6 +105,10 @@ export async function executeHumanRecruitmentAction(
 
   const executedAt = clock();
   if (!Number.isFinite(Date.parse(executedAt))) throw new Error("execution clock must return a valid timestamp");
+  const expected = createHumanRecruitmentActionIntent(config, payload, () => executedAt);
+  if (intent.schemaVersion !== 1 || intent.intentId !== expected.intentId) {
+    throw new Error("human recruitment intent integrity does not match prepared payload");
+  }
   assertFreshRules(payload, executedAt);
 
   const decision = evaluatePolicy(

@@ -13,6 +13,26 @@ export interface RetryBounds {
   readonly budgetMs: number;
 }
 
+/** Bound the caller's wait even when an SDK does not observe cancellation. */
+export async function withAbortBudget<T>(
+  budgetMs: number,
+  run: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new CommerceError("UPSTREAM_TIMEOUT", "adapter budget exhausted"));
+      controller.abort();
+    }, budgetMs);
+  });
+  try {
+    return await Promise.race([run(controller.signal), expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export type RetryVerdict =
   | { readonly retry: false }
   | { readonly retry: true; readonly delayMs: number };

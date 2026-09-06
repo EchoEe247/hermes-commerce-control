@@ -64,6 +64,42 @@ function redditPayload(rulesVerifiedAt = "2026-08-30T10:00:00.000Z"): HumanRecru
   });
 }
 
+test("executor rejects changed content and forged IDs before transport", async () => {
+  const payload = redditPayload();
+  const prepared = createHumanRecruitmentActionIntent(loadConfig({}), payload);
+  const cfg = loadConfig({
+    HUMAN_RECRUITMENT_B1_ENABLED: "true",
+    HUMAN_RECRUITMENT_B1_APPROVED_INTENT_ID: prepared.intentId,
+  });
+  let calls = 0;
+  const transport: HumanRecruitmentTransport = {
+    channel: "reddit",
+    async execute() { calls += 1; return { externalReference: "unexpected" }; },
+  };
+  const changedPayloads: HumanRecruitmentPayload[] = [
+    { ...payload, rendered: { ...payload.rendered, body: "Unapproved content" } },
+    { ...payload, workerTerms: { ...payload.workerTerms, fullCompensationUsd: 400 } },
+    { ...payload, workerTerms: { ...payload.workerTerms, fullCompensationUsd: 40.001 } },
+    { ...payload, rulesVerifiedAt: "2026-08-30T10:09:00.000Z" },
+    { ...payload, target: "r/different" },
+  ];
+  for (const changed of changedPayloads) {
+    await assert.rejects(executeHumanRecruitmentAction(
+      cfg, changed, { ...prepared, target: changed.target }, transport,
+      () => "2026-08-30T10:10:00.000Z",
+    ), /integrity|match/);
+  }
+  const different = buildHumanRecruitmentPayload(CONTRACT, {
+    channel: "reddit", target: "r/different", rulesVerifiedAt: payload.rulesVerifiedAt,
+  });
+  const differentIntent = createHumanRecruitmentActionIntent(loadConfig({}), different);
+  await assert.rejects(executeHumanRecruitmentAction(
+    cfg, different, { ...differentIntent, intentId: prepared.intentId }, transport,
+    () => "2026-08-30T10:10:00.000Z",
+  ), /integrity|match/);
+  assert.equal(calls, 0);
+});
+
 test("reddit adapter emits only frozen worker terms, not internal upstream economics or source metadata", () => {
   const payload = redditPayload();
   assert.equal(payload.channel, "reddit");
