@@ -73,6 +73,17 @@ Common adapter contracts live in `src/adapters/interface.ts`, registration in `s
 
 When changing an adapter, cover success, empty-but-healthy results, malformed responses, timeout/unavailability, capability declarations, and hostile URL/input cases where applicable.
 
+#### Adapter Timeout and Cancellation Semantics
+
+HCC enforces strict execution boundaries around external adapter operations (`src/adapters/registry.ts`, `src/network/retry.ts`):
+
+- **Caller Wait Bound:** `adapterBudgetMs` strictly caps the maximum wall-clock time the caller or control plane waits for any single adapter invocation. When the budget expires, HCC immediately returns `UPSTREAM_TIMEOUT`.
+- **AbortSignal Emission:** HCC creates and signals an `AbortSignal` when an adapter budget expires.
+- **HCC-Owned Network Resources:** Outbound HTTP requests made through HCC-owned `SafeFetch` are automatically aborted and their underlying sockets destroyed upon budget expiration.
+- **Third-Party SDK Cancellation Limits:** In single-threaded JavaScript runtimes, `Promise.race` cannot preemptively kill arbitrary non-cooperative asynchronous code. If a third-party SDK ignores the provided `AbortSignal` or provides no cancellation/close primitive, its background promise may continue until natural completion.
+- **Current SDK Status (PipRail):** `@piprail/sdk` currently does not accept an `AbortSignal` or expose a cancel/close handle. While HCC caller latency remains strictly bounded at `adapterBudgetMs` without waiting, the SDK underlying network task may run to its own conclusion in the background.
+- **Architectural Boundary:** HCC does not claim hard process-level termination of uncooperative third-party SDK work where the underlying provider lacks a cancellation primitive. No artificial process isolation is added.
+
 ### `src/network/`
 
 Network safety and resilience:

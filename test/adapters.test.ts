@@ -1,3 +1,4 @@
+import { withAbortBudget } from "../src/network/retry.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadConfig } from "../src/config.js";
@@ -37,6 +38,57 @@ test("SDK operations that ignore abort cannot outlive the command budget", async
   } finally {
     clearTimeout(guard);
   }
+});
+
+test("caller timeout remains bounded with zero unhandled rejections despite a non-cooperative operation", async () => {
+  const unhandled: unknown[] = [];
+  const uncaught: unknown[] = [];
+  const onUnhandled = (err: unknown): void => {
+    unhandled.push(err);
+  };
+  const onUncaught = (err: unknown): void => {
+    uncaught.push(err);
+  };
+  process.on("unhandledRejection", onUnhandled);
+  process.on("uncaughtException", onUncaught);
+
+  let taskRunning = false;
+  let taskFinished = false;
+  let lateRejectionFired = false;
+
+  async function nonCooperativeTask(_signal: AbortSignal): Promise<void> {
+    taskRunning = true;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    taskRunning = false;
+    taskFinished = true;
+    lateRejectionFired = true;
+    throw new Error("uncooperative late rejection after caller timeout");
+  }
+
+  const started = Date.now();
+  let callerError: CommerceError | null = null;
+  try {
+    await withAbortBudget(25, nonCooperativeTask);
+  } catch (err) {
+    callerError = err instanceof CommerceError ? err : null;
+  }
+  const elapsed = Date.now() - started;
+
+  assert.ok(elapsed < 80, `caller wait must be bounded by budget: ${elapsed}ms`);
+  assert.equal(callerError?.code, "UPSTREAM_TIMEOUT");
+  assert.equal(taskRunning, true, "non-cooperative work still active immediately after caller timeout");
+  assert.equal(taskFinished, false);
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  assert.equal(taskRunning, false);
+  assert.equal(taskFinished, true);
+  assert.equal(lateRejectionFired, true);
+  assert.equal(unhandled.length, 0, "no unhandled rejection emitted");
+  assert.equal(uncaught.length, 0, "no uncaught exception emitted");
+
+  process.removeListener("unhandledRejection", onUnhandled);
+  process.removeListener("uncaughtException", onUncaught);
 });
 
 function fakeService(id: string, source: "cdp_bazaar" | "agent402" | "the402") {
