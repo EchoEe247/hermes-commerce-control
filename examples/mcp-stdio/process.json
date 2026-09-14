@@ -1,0 +1,4 @@
+{
+  "command": "/absolute/path/to/node",
+  "args": ["/absolute/path/to/hermes-commerce-control/dist/launch/mcp.js"]
+}

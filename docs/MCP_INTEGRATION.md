@@ -39,6 +39,9 @@ Client configuration locations differ, but the process definition is the same: p
 
 Conceptually:
 
+For copy-and-edit JSON files, use the [portable stdio example](../examples/mcp-stdio/README.md).
+It includes an optional workspace-path variant and a dependency-free fixture check.
+
 ```json
 {
   "command": "/absolute/path/to/node",

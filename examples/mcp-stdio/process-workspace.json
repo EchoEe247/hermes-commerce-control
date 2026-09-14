@@ -1,0 +1,7 @@
+{
+  "command": "/absolute/path/to/node",
+  "args": ["/absolute/path/to/hermes-commerce-control/dist/launch/mcp.js"],
+  "env": {
+    "COMMERCE_REPO_ROOT": "/absolute/path/to/workspace"
+  }
+}
