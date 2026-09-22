@@ -21,6 +21,7 @@
 import { lookup as dnsLookup } from "node:dns";
 import { Agent, request as undiciRequest } from "undici";
 import type { LookupFunction } from "node:net";
+import { APP_NAME, APP_VERSION } from "../app.js";
 import type { CommerceConfig } from "../config.js";
 import { CommerceError } from "../core/errors.js";
 import { assertAllowedUrl, assertPublicAddress, isBlockedAddress } from "./ssrf.js";
@@ -68,7 +69,7 @@ export interface RequestInit2 {
 /** Header names that must never be attached to an outbound request. */
 const FORBIDDEN_REQUEST_HEADERS = /^(authorization|cookie|x-api-key|api-key|x-payment|proxy-authorization)$/i;
 
-const DEFAULT_UA = "hermes-commerce-control/0.1.0 (Mode-A read-only)";
+const DEFAULT_UA = `${APP_NAME}/${APP_VERSION} (Mode-A read-only)`;
 
 function originOf(url: string): string | null {
   try {

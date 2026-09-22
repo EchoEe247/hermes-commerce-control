@@ -4,6 +4,21 @@ All notable changes to Hermes Commerce Control will be documented in this file.
 
 The project follows semantic versioning for published releases.
 
+## [0.1.3] - 2026-09-22
+
+Hardening release candidate for the standalone Hermes Commerce Control runtime.
+
+### Changed
+
+- Mode-A launch hardening now removes wallet/account seed and signer-authority environment variants while avoiding unrelated names such as `RANDOM_SEED` and `DESIGNER_THEME`.
+- The shared safe-fetch User-Agent now derives from the runtime package version instead of a stale hardcoded `0.1.0` value.
+- The transitive Hono runtime dependency is refreshed to a patched release through the lockfile.
+
+### Safety boundary
+
+- General external writes and live value movement remain disabled by default.
+- The canonical MCP surface remains exactly 11 tools; no financial execution tool is added by this release.
+
 ## [0.1.2] - 2026-09-03
 
 Runtime-version correctness patch for the published package.

@@ -21,10 +21,46 @@ export const WALLET_SECRET_ENV_FRAGMENTS: readonly string[] = Object.freeze([
   "NWC",
 ]);
 
+const WALLET_AUTHORITY_CONTEXT_TOKENS = new Set([
+  "ACCOUNT",
+  "BITCOIN",
+  "BTC",
+  "CRYPTO",
+  "ETH",
+  "ETHEREUM",
+  "EVM",
+  "PRIVATE",
+  "SIGNING",
+  "SOLANA",
+  "WALLET",
+]);
+
+function envNameTokens(name: string): readonly string[] {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .split("_")
+    .filter((token) => token !== "");
+}
+
 /** Returns true when an environment-variable name can carry wallet authority. */
 export function isWalletSecretEnvName(name: string): boolean {
   const upper = name.toUpperCase();
-  return WALLET_SECRET_ENV_FRAGMENTS.some((fragment) => upper.includes(fragment));
+  if (WALLET_SECRET_ENV_FRAGMENTS.some((fragment) => upper.includes(fragment))) return true;
+
+  const tokens = envNameTokens(name);
+
+  // A signer is authority by definition. Token matching avoids false positives
+  // such as DESIGNER_THEME while still catching ACCOUNT_SIGNER and signer_key.
+  if (tokens.includes("SIGNER")) return true;
+
+  // A bare SEED can be wallet authority. Scoped seed names are removed only
+  // when their surrounding tokens indicate a wallet/signing context, so benign
+  // values such as RANDOM_SEED are not deleted indiscriminately.
+  if (!tokens.includes("SEED")) return false;
+  if (tokens.length === 1) return true;
+  return tokens.some((token) => WALLET_AUTHORITY_CONTEXT_TOKENS.has(token));
 }
 
 /**

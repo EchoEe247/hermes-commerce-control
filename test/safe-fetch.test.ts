@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { once } from "node:events";
+import { APP_NAME, APP_VERSION } from "../src/app.js";
 import { createSafeFetch } from "../src/network/safe-fetch.js";
 import { loadConfig } from "../src/config.js";
 import { parseRetryAfter, verdictForStatus, backoffMs } from "../src/network/retry.js";
@@ -70,6 +71,24 @@ test("safe-fetch: allowlisted local base URL is permitted for local integration"
       assert.equal(body.ok, true);
     },
   );
+});
+
+test("safe-fetch: default User-Agent follows the runtime package version", async () => {
+  let seenUserAgent: string | undefined;
+  await withServer(
+    (req, res) => {
+      const header = req.headers["user-agent"];
+      seenUserAgent = Array.isArray(header) ? header.join(", ") : header;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end('{"ok":true}');
+    },
+    async (base) => {
+      const safeFetch = createSafeFetch(cfg, { allowLocalBaseUrls: [base] });
+      await safeFetch.json(base + "/x");
+    },
+  );
+
+  assert.equal(seenUserAgent, `${APP_NAME}/${APP_VERSION} (Mode-A read-only)`);
 });
 
 test("safe-fetch: an allowlisted base does not allow a sibling local port", async () => {
